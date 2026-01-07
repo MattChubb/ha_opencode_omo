@@ -578,6 +578,50 @@ OpenCode starts in the `/homeassistant` directory, which is your Home Assistant 
 - Custom components in `custom_components/`
 - And all other configuration files
 
+## Customizing AI Instructions (AGENTS.md)
+
+The add-on creates an `AGENTS.md` file in your Home Assistant config directory (`/homeassistant/AGENTS.md`) on first install. This file contains instructions that guide how OpenCode behaves when working with your Home Assistant setup.
+
+### Default Instructions Include:
+
+- **User consent rules** - The AI won't make changes without your explicit approval
+- **Home Assistant knowledge** - File structure, YAML syntax, automation patterns
+- **Safety guidelines** - Protection for secrets, backup reminders, validation checks
+- **MCP awareness** - How to use MCP tools when available
+
+### Customizing the Instructions
+
+You can edit `AGENTS.md` to add your own rules or context:
+
+1. Open **File Editor** (or VS Code Server addon)
+2. Navigate to `/config/AGENTS.md`
+3. Add your customizations
+
+**Example additions:**
+
+```markdown
+## My Home Setup
+
+- I use Zigbee2MQTT for all Zigbee devices
+- My house has 3 floors: basement, main, upstairs
+- Prefer MQTT automations over native HA automations
+- Always use packages for new configuration
+
+## Coding Preferences
+
+- Use descriptive entity_id names with room prefix
+- Add comments explaining automation logic
+- Prefer template sensors over Node-RED
+```
+
+### Resetting to Default
+
+If you want to restore the default `AGENTS.md`:
+
+1. Delete or rename the existing file
+2. Restart the add-on
+3. A fresh default will be created
+
 ## Tips
 
 ### Validating Configuration

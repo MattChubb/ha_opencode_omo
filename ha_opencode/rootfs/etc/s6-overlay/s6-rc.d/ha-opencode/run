@@ -18,6 +18,17 @@ mkdir -p /data/.local/share/opencode
 mkdir -p /data/.config/opencode
 
 # ==============================================================================
+# Deploy AGENTS.md to Home Assistant config directory (first install only)
+# Users can customize this file using File Editor or any text editor
+# ==============================================================================
+
+if [ ! -f "/homeassistant/AGENTS.md" ]; then
+    cp /opt/ha-mcp-server/AGENTS.md /homeassistant/AGENTS.md
+    bashio::log.info "Deployed default AGENTS.md to /homeassistant/"
+    bashio::log.info "You can customize AI instructions by editing AGENTS.md"
+fi
+
+# ==============================================================================
 # Read configuration options
 # ==============================================================================
 

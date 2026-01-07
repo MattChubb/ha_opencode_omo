@@ -70,6 +70,7 @@ show_banner
 
 echo -e "${WHITE}Working directory:${NC} ${CYAN}/homeassistant${NC}"
 echo -e "${GRAY}First time? Use ${NC}${GREEN}/connect${NC} ${GRAY}inside OpenCode to add your AI provider${NC}"
+echo -e "${GRAY}Customize AI behavior by editing ${NC}${GREEN}AGENTS.md${NC} ${GRAY}in your config folder${NC}"
 echo ""
 
 # Launch OpenCode
