@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.0.9
+
+**UI Improvements**
+
+- Updated add-on icon and logo images
+
 ## 1.0.7
 
 **New Feature**
