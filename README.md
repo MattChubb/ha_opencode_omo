@@ -1,6 +1,5 @@
 # Home Assistant Add-on: HA OpenCode
 
-[![GitHub Release][releases-shield]][releases]
 [![License][license-shield]](LICENSE)
 ![Project Stage][project-stage-shield]
 ![Maintenance][maintenance-shield]
@@ -10,9 +9,37 @@
 
 AI-powered coding agent for Home Assistant configuration.
 
-## About
+## What is OpenCode?
 
-HA OpenCode brings the power of AI-assisted coding directly to your Home Assistant instance. Edit your configuration files using natural language, get intelligent YAML assistance, and leverage deep Home Assistant integration through MCP (Model Context Protocol).
+[OpenCode](https://opencode.ai) is an open-source AI coding agent that runs in your terminal. It understands your codebase, can edit files, run commands, and help you build software using natural language. Think of it as having an expert developer available 24/7 who can read your code, suggest improvements, fix bugs, and implement features.
+
+OpenCode works by connecting to large language models (LLMs) from various providers and giving them the ability to interact with your local filesystem, execute commands, and understand context from your project.
+
+### Supported AI Providers & Models
+
+OpenCode supports **75+ AI providers** including:
+
+| Provider | Models |
+|----------|--------|
+| **Anthropic** | Claude 4 Opus, Claude 4 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku |
+| **OpenAI** | GPT-4o, GPT-4 Turbo, o1, o1-mini, o3-mini |
+| **Google** | Gemini 2.0 Flash, Gemini 1.5 Pro, Gemini 1.5 Flash |
+| **AWS Bedrock** | Claude, Llama, Mistral models via AWS |
+| **Azure OpenAI** | GPT-4, GPT-4 Turbo hosted on Azure |
+| **Groq** | Llama 3, Mixtral with ultra-fast inference |
+| **Mistral** | Mistral Large, Mistral Medium, Codestral |
+| **Ollama** | Run local models (Llama, CodeLlama, Mistral, etc.) |
+| **OpenRouter** | Access to 100+ models through a single API |
+| **Together AI** | Llama, Mixtral, and other open models |
+| **Fireworks AI** | Fast inference for open models |
+| **xAI** | Grok models |
+| **Deepseek** | Deepseek Coder, Deepseek Chat |
+
+You can also use **OpenCode Zen** - a curated selection of models optimized specifically for coding tasks.
+
+## About This Add-on
+
+HA OpenCode brings the power of OpenCode directly to your Home Assistant instance. Edit your configuration files using natural language, get intelligent YAML assistance, and leverage deep Home Assistant integration through MCP (Model Context Protocol).
 
 ### Key Features
 
@@ -94,8 +121,6 @@ MIT License - see [LICENSE](LICENSE) for details.
 [addon-ha-opencode]: ./ha_opencode
 [addon-doc-ha-opencode]: ./ha_opencode/DOCS.md
 [issues]: https://github.com/magnusoverli/ha_opencode/issues
-[releases]: https://github.com/magnusoverli/ha_opencode/releases
-[releases-shield]: https://img.shields.io/github/release/magnusoverli/ha_opencode.svg
 [repo-add]: https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fmagnusoverli%2Fha_opencode
 [repo-btn]: https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg
 
