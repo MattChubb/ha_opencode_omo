@@ -17,75 +17,30 @@ export XDG_CONFIG_HOME="/data/.config"
 mkdir -p /data/.local/share/opencode
 mkdir -p /data/.config/opencode
 
-# Sync config from template (MCP/LSP enabled state comes from bashio config, not preserved)
-if [ ! -f "/data/.config/opencode/opencode.json" ]; then
-    cp /opt/ha-mcp-server/opencode-ha.json /data/.config/opencode/opencode.json
-    bashio::log.info "Created default OpenCode configuration"
-else
-    # Update from template but don't preserve enabled states - those come from bashio config
-    cp /opt/ha-mcp-server/opencode-ha.json /data/.config/opencode/opencode.json
-    bashio::log.info "Updated OpenCode configuration from template"
-fi
-
 # ==============================================================================
 # Read configuration options
 # ==============================================================================
 
-# Feature toggles
 MCP_ENABLED=$(bashio::config 'mcp_enabled')
-
-# Terminal appearance
+LSP_ENABLED=$(bashio::config 'lsp_enabled' || echo "true")
 TERMINAL_THEME=$(bashio::config 'terminal_theme')
 FONT_SIZE=$(bashio::config 'font_size')
 CURSOR_STYLE=$(bashio::config 'cursor_style')
 CURSOR_BLINK=$(bashio::config 'cursor_blink')
 
-# LSP feature toggle (always enabled by default - it's read-only)
-LSP_ENABLED=$(bashio::config 'lsp_enabled' || echo "true")
-
-bashio::log.info "Configuration:"
-bashio::log.info "  - MCP Integration: ${MCP_ENABLED}"
-bashio::log.info "  - LSP Integration: ${LSP_ENABLED}"
-bashio::log.info "  - Terminal Theme: ${TERMINAL_THEME}"
-bashio::log.info "  - Font Size: ${FONT_SIZE}px"
+bashio::log.info "Configuration: MCP=${MCP_ENABLED} LSP=${LSP_ENABLED} Theme=${TERMINAL_THEME}"
 
 # ==============================================================================
-# Apply MCP configuration
+# Apply configuration in single jq operation
 # ==============================================================================
 
-if [ "${MCP_ENABLED}" = "true" ]; then
-    bashio::log.info "Enabling Home Assistant MCP integration..."
-    if command -v jq &> /dev/null; then
-        jq '.mcp.homeassistant.enabled = true' "/data/.config/opencode/opencode.json" > "/data/.config/opencode/opencode.json.tmp" && \
-            mv "/data/.config/opencode/opencode.json.tmp" "/data/.config/opencode/opencode.json"
-    fi
-else
-    bashio::log.info "MCP integration disabled"
-    if command -v jq &> /dev/null; then
-        jq '.mcp.homeassistant.enabled = false' "/data/.config/opencode/opencode.json" > "/data/.config/opencode/opencode.json.tmp" && \
-            mv "/data/.config/opencode/opencode.json.tmp" "/data/.config/opencode/opencode.json"
-    fi
-fi
+MCP_BOOL=$([ "${MCP_ENABLED}" = "true" ] && echo "true" || echo "false")
+LSP_DISABLED=$([ "${LSP_ENABLED}" = "true" ] && echo "false" || echo "true")
 
-# ==============================================================================
-# Apply LSP configuration
-# ==============================================================================
-
-if [ "${LSP_ENABLED}" = "true" ]; then
-    bashio::log.info "Enabling Home Assistant LSP integration..."
-    if command -v jq &> /dev/null; then
-        # Remove disabled flag if it exists (LSP is enabled by default if not disabled)
-        jq 'if .lsp["ha-yaml"].disabled then del(.lsp["ha-yaml"].disabled) else . end' "/data/.config/opencode/opencode.json" > "/data/.config/opencode/opencode.json.tmp" && \
-            mv "/data/.config/opencode/opencode.json.tmp" "/data/.config/opencode/opencode.json"
-    fi
-else
-    bashio::log.info "LSP integration disabled"
-    if command -v jq &> /dev/null; then
-        # Set disabled: true to disable the LSP server
-        jq '.lsp["ha-yaml"].disabled = true' "/data/.config/opencode/opencode.json" > "/data/.config/opencode/opencode.json.tmp" && \
-            mv "/data/.config/opencode/opencode.json.tmp" "/data/.config/opencode/opencode.json"
-    fi
-fi
+jq --argjson mcp "${MCP_BOOL}" --argjson lsp_disabled "${LSP_DISABLED}" '
+    .mcp.homeassistant.enabled = $mcp |
+    if $lsp_disabled then .lsp["ha-yaml"].disabled = true else del(.lsp["ha-yaml"].disabled) end
+' /opt/ha-mcp-server/opencode-ha.json > /data/.config/opencode/opencode.json
 
 # ==============================================================================
 # Theme definitions

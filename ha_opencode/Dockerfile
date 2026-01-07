@@ -32,22 +32,22 @@ RUN ARCH=$([ "$BUILD_ARCH" = "aarch64" ] && echo "aarch64" || echo "x86_64") \
 RUN npm install -g opencode-ai@latest \
     && npm cache clean --force
 
-# Copy root filesystem
+# Copy package.json files first for better layer caching
+# Changes to server code won't invalidate npm install cache
+COPY rootfs/opt/ha-mcp-server/package*.json /opt/ha-mcp-server/
+COPY rootfs/opt/ha-lsp-server/package*.json /opt/ha-lsp-server/
+
+# Install MCP and LSP dependencies in parallel
+RUN cd /opt/ha-mcp-server && npm install --production --no-optional & \
+    cd /opt/ha-lsp-server && npm install --production --no-optional & \
+    wait && npm cache clean --force
+
+# Copy root filesystem (server code, scripts, etc.)
 COPY rootfs /
 
 # Make scripts executable
 RUN chmod +x /usr/local/bin/* \
     && chmod +x /etc/s6-overlay/s6-rc.d/ha-opencode/run
-
-# Install Home Assistant MCP server dependencies
-WORKDIR /opt/ha-mcp-server
-RUN npm install --production --no-optional \
-    && npm cache clean --force
-
-# Install Home Assistant LSP server dependencies
-WORKDIR /opt/ha-lsp-server
-RUN npm install --production --no-optional \
-    && npm cache clean --force
 
 # Create directories for runtime data
 RUN mkdir -p /data/.local/share/opencode \

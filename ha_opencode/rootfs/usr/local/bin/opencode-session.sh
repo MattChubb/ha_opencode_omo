@@ -71,11 +71,6 @@ show_banner
 echo -e "${WHITE}Working directory:${NC} ${CYAN}/homeassistant${NC}"
 echo -e "${GRAY}First time? Use ${NC}${GREEN}/connect${NC} ${GRAY}inside OpenCode to add your AI provider${NC}"
 echo ""
-echo -e "Starting OpenCode..."
-echo ""
-
-# Small delay so user can see the message
-sleep 1
 
 # Launch OpenCode
 opencode
