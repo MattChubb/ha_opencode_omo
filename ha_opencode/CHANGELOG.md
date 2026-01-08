@@ -1,6 +1,20 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.0.12
+
+**Bug Fixes**
+
+- Fixed MCP server API endpoint access
+  - Added `callHACore()` function for direct Home Assistant Core API access
+  - Fixed `get_error_log` to use correct endpoint (`/api/error_log` via Core API)
+  - Some endpoints are not available via Supervisor proxy and require direct Core API access
+- Improved device discovery in `get_devices` tool
+  - More reliable device listing by iterating through all entity states
+  - Ensures all devices are discovered, including those missed by filter-based approaches
+
+
+
 ## 1.0.11
 
 
