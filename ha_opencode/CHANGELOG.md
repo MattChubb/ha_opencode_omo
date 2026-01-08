@@ -1,4 +1,33 @@
 # Changelog
+All notable changes to this project will be documented in this file.
+
+## 1.0.11
+
+
+**Bug Fixes**
+
+- Fixed MCP server Jinja2 template bugs
+  - Fixed `get_areas` template to use `namespace()` for proper list accumulation
+  - Fixed `get_devices` to return device attributes (name, manufacturer, model, area)
+  - Fixed `get_error_log` endpoint from `/error_log` to `/error/all`
+  - Fixed `ha://areas` resource template with namespace() fix
+
+## 1.0.10
+
+**MCP Server Enhancements**
+
+- Added documentation tools to MCP server v2.2 (Documentation Edition)
+  - `get_integration_docs` - Fetch live documentation from Home Assistant website
+  - `get_breaking_changes` - Check for breaking changes by version/integration
+  - `check_config_syntax` - Validate YAML for deprecated patterns
+  - Implemented HTML parsing and content extraction from HA documentation pages
+  - Added deprecation pattern database for common configuration issues
+  - LLMs now guided to always verify syntax against current docs before writing config
+- Enhanced AGENTS.md with Home Assistant interaction guidelines
+  - Added Home Assistant Interaction Model section
+  - Added RESTRICTED section listing internal directories that should never be accessed
+  - Provided guidance on when to use configuration files vs MCP tools
+
 
 All notable changes to this project will be documented in this file.
 
