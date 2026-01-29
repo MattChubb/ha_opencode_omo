@@ -15,7 +15,7 @@
     "node": ">=18"
   },
   "private": true,
-  "license": "MIT",
+  "license": "Unlicense",
   "keywords": [
     "mcp",
     "home-assistant",

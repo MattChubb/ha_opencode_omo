@@ -26,5 +26,5 @@
     "yaml": "^2.4.5"
   },
   "author": "HA OpenCode Add-on",
-  "license": "MIT"
+  "license": "Unlicense"
 }

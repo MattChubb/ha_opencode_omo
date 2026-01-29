@@ -3,6 +3,7 @@
 [![GitHub Release][releases-shield]][releases]
 ![Project Stage][project-stage-shield]
 [![License][license-shield]][license]
+[![Third-Party Licenses][third-party-shield]][third-party]
 
 ![Supports aarch64 Architecture][aarch64-shield]
 ![Supports amd64 Architecture][amd64-shield]
@@ -117,7 +118,11 @@ check [the contributor's page][contributors].
 
 ## License
 
-MIT License - see the [LICENSE](LICENSE) file for details.
+This is free and unencumbered software released into the public domain.
+See the [UNLICENSE](UNLICENSE) file for details.
+
+This project uses third-party components with their own licenses.
+See [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) for details.
 
 [aarch64-shield]: https://img.shields.io/badge/aarch64-yes-green.svg
 [amd64-shield]: https://img.shields.io/badge/amd64-yes-green.svg
@@ -126,8 +131,10 @@ MIT License - see the [LICENSE](LICENSE) file for details.
 [contributors]: https://github.com/magnusoverli/ha_opencode/graphs/contributors
 [docs]: ./ha_opencode/DOCS.md
 [issues]: https://github.com/magnusoverli/ha_opencode/issues
-[license]: LICENSE
-[license-shield]: https://img.shields.io/github/license/magnusoverli/ha_opencode.svg
+[license]: UNLICENSE
+[license-shield]: https://img.shields.io/badge/license-Unlicense-blue.svg
+[third-party]: THIRD-PARTY-LICENSES.md
+[third-party-shield]: https://img.shields.io/badge/third--party-licenses-lightgrey.svg
 [magnusoverli]: https://github.com/magnusoverli
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2026.svg
 [opencode-discord]: https://opencode.ai/discord
