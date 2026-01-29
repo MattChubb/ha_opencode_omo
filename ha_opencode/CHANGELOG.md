@@ -1,6 +1,19 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.0.16
+
+**New Feature: Update Management**
+
+- Added 5 new MCP tools for managing Home Assistant updates (MCP server v2.3)
+  - `get_available_updates` - Check for updates across Core, OS, Supervisor, and apps
+  - `get_addon_changelog` - View app changelogs before updating
+  - `update_component` - Initiate updates with optional backup
+  - `get_update_progress` - Real-time progress monitoring with visual feedback
+  - `get_running_jobs` - List all Supervisor jobs (updates, backups, restores)
+- Added `callSupervisor()` API wrapper for direct Supervisor API access
+- Safety guard prevents self-update from within the container (use HA UI instead)
+
 ## 1.0.15
 
 **Build Improvements**
