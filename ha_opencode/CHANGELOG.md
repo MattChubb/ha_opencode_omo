@@ -1,12 +1,6 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## 1.1.7
-
-**Maintenance: Changelog formatting fix**
-
-- Fixed issue reference links in changelog to be clickable
-
 ## 1.1.6
 
 **Bug Fix: Multiple OpenCode Instances Spawning (fixes [#4](https://github.com/magnusoverli/ha_opencode/issues/4))**
