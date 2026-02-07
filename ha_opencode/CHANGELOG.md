@@ -1,6 +1,18 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.1.8
+
+**New Feature: Prettier YAML Formatter + Comprehensive Style Guide**
+
+- Added Prettier formatter for automatic YAML formatting aligned with Home Assistant conventions
+- Installed globally in container and auto-configured for `.yaml`/`.yml` files
+- Deploys `.prettierrc.yaml` to `/homeassistant/` on first install (user-customizable)
+- Added comprehensive YAML Style Guide section to AGENTS.md covering all 13 official HA YAML formatting rules
+- Style guide includes good/bad examples for each rule and marks rules Prettier cannot enforce
+- AI agents now have explicit, inline guidance to write HA-compliant YAML on every change
+- Reference: https://developers.home-assistant.io/docs/documenting/yaml-style-guide/
+
 ## 1.1.6
 
 **Bug Fix: Multiple OpenCode Instances Spawning (fixes [#4](https://github.com/magnusoverli/ha_opencode/issues/4))**
