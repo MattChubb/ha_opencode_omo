@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.1.6
+
+**Bug Fix: Multiple OpenCode Instances Spawning (fixes #4)**
+
+- Fixed container health check failing due to missing `pgrep` (added `procps` package)
+- Added `tmux` for session persistence — reconnecting now reattaches to the existing session instead of spawning a new OpenCode instance
+- Prevents orphaned OpenCode processes from accumulating and consuming memory on resource-constrained devices (e.g. Raspberry Pi)
+
 ## 1.1.5
 
 **Bug Fix: watch_firmware_update Timeout**
