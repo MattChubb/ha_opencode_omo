@@ -42,7 +42,7 @@ detect_cpu_capabilities() {
     local has_avx=false
     
     if [ -f /proc/cpuinfo ]; then
-        cpu_flags=$(cat /proc/cpuinfo | grep -oP 'flags\s*:\s*\K.*' | head -1)
+        cpu_flags=$(awk -F': ' '/^flags/ {print $2; exit}' /proc/cpuinfo)
     fi
     
     if echo "${cpu_flags}" | grep -q '\bavx2\b'; then
