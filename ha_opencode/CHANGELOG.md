@@ -1,6 +1,18 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.3.0
+
+**Architecture Refactor, CPU Compatibility, and Bug Fixes**
+
+- Refactored s6 service architecture: initialization logic (directory setup, config generation, file deployment) now runs once in a dedicated `init-opencode` oneshot service, keeping the ttyd long-running service clean and focused
+- Added CPU baseline detection for older processors without AVX2 support — the add-on now auto-detects CPU capabilities and selects the appropriate OpenCode binary (configurable via `cpu_mode`: auto/baseline/regular)
+- Added custom OpenCode configuration injection — power users can now paste a JSON config in the add-on settings to customize OpenCode behavior (providers, keybindings, etc.)
+- Fixed MCP `get_error_log` tool returning 404 errors by routing through the correct Supervisor proxy endpoint (`/core/api/error_log`)
+- Terminal banner now displays the actual add-on version instead of hardcoded "v1.0"
+
+Inspired by work done in [okliam's fork](https://github.com/okliam). Thanks for exploring these ideas!
+
 ## 1.1.8
 
 **New Feature: Prettier YAML Formatter + Comprehensive Style Guide**
