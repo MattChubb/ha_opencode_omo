@@ -1,1 +1,1 @@
-init-opencode/run
+/etc/s6-overlay/s6-rc.d/init-opencode/run
