@@ -80,7 +80,7 @@ changes, please:
    Or manually add the repository URL:
 
    ```text
-   https://github.com/magnusoverli/ha_opencode
+   https://github.com/MattChubb/ha_opencode_omo
    ```
 
 2. Find **"HA OpenCode"** in the app store and click **Install**.
@@ -130,7 +130,7 @@ See [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) for details.
 [commits]: https://github.com/magnusoverli/ha_opencode/commits/main
 [contributors]: https://github.com/magnusoverli/ha_opencode/graphs/contributors
 [docs]: ./ha_opencode/DOCS.md
-[issues]: https://github.com/magnusoverli/ha_opencode/issues
+[issues]: https://github.com/MattChubb/ha_opencode_omo/issues
 [license]: UNLICENSE
 [license-shield]: https://img.shields.io/badge/license-Unlicense-blue.svg
 [third-party]: THIRD-PARTY-LICENSES.md
@@ -142,5 +142,5 @@ See [THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md) for details.
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-orange.svg
 [releases]: https://github.com/magnusoverli/ha_opencode/releases
 [releases-shield]: https://img.shields.io/github/release/magnusoverli/ha_opencode.svg
-[repo-add]: https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fmagnusoverli%2Fha_opencode
+[repo-add]: https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FMattChubb%2Fha_opencode_omo
 [repo-btn]: https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg
