@@ -85,6 +85,10 @@ A CLI tool designed for AI agents to manage Home Assistant. Run `hab` commands v
 `hab` is pre-authenticated via the Supervisor token - no login required.
 Run `hab --help` or `hab <command> --help` for full usage details.
 
+<!-- HAB_LIVE_HELP_START -->
+*(Live hab command reference will be injected here at container startup)*
+<!-- HAB_LIVE_HELP_END -->
+
 **Use configuration files when:** defining behavior, creating automations, setting up integrations
 **Use MCP tools when:** checking current state, safe config writing, anomaly detection, entity diagnostics
 **Use hab CLI when:** managing dashboards, areas, helpers, backups, blueprints, and bulk admin operations
