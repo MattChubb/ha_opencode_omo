@@ -20,7 +20,7 @@ Configure the app from the **Configuration** tab in the app page.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| **Enable MCP Home Assistant Integration** | `true` | Enable the Model Context Protocol (MCP) server for deep Home Assistant integration. Includes 32 tools, 13 resources, 6 guided prompts, and an intelligence layer for anomaly detection, config validation, and automation suggestions. |
+| **Enable MCP Home Assistant Integration** | `true` | Enable the Model Context Protocol (MCP) server for deep Home Assistant integration. Includes 33 tools, 13 resources, 6 guided prompts, and an intelligence layer for anomaly detection, config validation, and automation suggestions. |
 | **Enable LSP Home Assistant Integration** | `true` | Enable the Language Server Protocol (LSP) server for intelligent YAML editing. Provides entity/service autocomplete, hover documentation, diagnostics for unknown entities, and go-to-definition for !include tags. |
 
 ### Terminal Appearance
@@ -217,7 +217,7 @@ The app includes an enhanced MCP (Model Context Protocol) server that provides d
 
 | Capability | Count | Description |
 |------------|-------|-------------|
-| **Tools** | 32 | Actions, queries, config validation, and device management |
+| **Tools** | 33 | Actions, queries, config validation, device management, and hab CLI |
 | **Resources** | 9 + 4 templates | Browsable data exposed to the AI |
 | **Prompts** | 6 | Pre-built guided workflows for common tasks |
 | **Intelligence** | Built-in | Anomaly detection, suggestions, semantic search |
@@ -242,7 +242,7 @@ Then restart OpenCode (exit and run `opencode` again).
 
 ---
 
-## MCP Tools (32 Available)
+## MCP Tools (33 Available)
 
 ### State Management
 
@@ -330,6 +330,12 @@ Then restart OpenCode (exit and run `opencode` again).
 | Tool | Description |
 |------|-------------|
 | `watch_firmware_update` | Monitor or start firmware updates (ESPHome, WLED, Zigbee) with real-time progress |
+
+### hab CLI Gateway
+
+| Tool | Description |
+|------|-------------|
+| `hab_run` | Run any [hab](https://github.com/balloob/home-assistant-build-cli) CLI command as a native MCP tool. Covers dashboard CRUD, area/floor/zone management, helpers, backups, blueprints, automation CRUD via API, and more. Pass the command without the `hab` prefix (e.g., `area list`, `dashboard list`). |
 
 ---
 
