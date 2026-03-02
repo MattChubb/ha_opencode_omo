@@ -7,6 +7,7 @@ ARG BUILD_ARCH
 ARG TTYD_VERSION=1.7.7
 ARG OPENCODE_VERSION=latest
 ARG BUN_VERSION=1.2.5
+ARG HAB_VERSION=1.4.0
 
 # Environment for better Node.js performance
 ENV NODE_ENV=production \
@@ -48,6 +49,12 @@ RUN ARCH=$([ "$BUILD_ARCH" = "aarch64" ] && echo "aarch64" || echo "x86_64") \
     && rm -rf /tmp/bun.zip /usr/local/bun-linux-${ARCH}
 
 # Install OpenCode, Prettier, and oh-my-opencode globally
+# Install hab (Home Assistant Builder CLI) from GitHub releases
+# A CLI designed for AI agents to manage HA via REST/WebSocket APIs
+RUN ARCH=$([ "$BUILD_ARCH" = "aarch64" ] && echo "arm64" || echo "amd64") \
+    && curl -fsSL "https://github.com/balloob/home-assistant-build-cli/releases/download/${HAB_VERSION}/hab-linux-${ARCH}" -o /usr/local/bin/hab \
+    && chmod +x /usr/local/bin/hab
+
 # - OpenCode: AI coding agent (pin version in build.yaml for reproducible builds)
 # - Prettier: Code formatter for YAML files, configured for HA conventions
 # - oh-my-opencode: Enhanced agent harness with multi-model orchestration
