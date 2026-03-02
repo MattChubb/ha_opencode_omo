@@ -120,7 +120,7 @@ Simply run `/connect` and select **OpenCode Zen** to get started for free.
    
    Go to **Settings** → **Add-ons** → **Add-on Store** → **⋮** → **Repositories**
    
-   Add: `https://github.com/magnusoverli/ha_opencode`
+   Add: `https://github.com/magnusoverli/opencode`
    </details>
 
 2. **Install the add-on:**
@@ -254,7 +254,7 @@ Contributions of all kinds are welcome — feel free to open a PR!
 
 ### All Contributors
 
-See the [contributors page](https://github.com/magnusoverli/ha_opencode/graphs/contributors) for the full list of amazing people who have helped make this project better!
+See the [contributors page](https://github.com/magnusoverli/opencode/graphs/contributors) for the full list of amazing people who have helped make this project better!
 
 </td>
 </tr>
@@ -281,18 +281,18 @@ This is free and unencumbered software released into the public domain - see the
 <!-- Links -->
 [docs]: ./ha_opencode/DOCS.md
 [changelog]: ./ha_opencode/CHANGELOG.md
-[issues]: https://github.com/magnusoverli/ha_opencode/issues
+[issues]: https://github.com/magnusoverli/opencode/issues
 [license]: UNLICENSE
-[github]: https://github.com/magnusoverli/ha_opencode
-[repo-add]: https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fmagnusoverli%2Fha_opencode
+[github]: https://github.com/magnusoverli/opencode
+[repo-add]: https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fmagnusoverli%2Fopencode
 [repo-btn]: https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg
 
 <!-- Badges -->
-[version-shield]: https://img.shields.io/github/v/release/magnusoverli/ha_opencode.svg?style=for-the-badge
+[version-shield]: https://img.shields.io/github/v/release/magnusoverli/opencode.svg?style=for-the-badge
 [project-stage-shield]: https://img.shields.io/badge/project%20stage-experimental-orange.svg?style=for-the-badge
-[license-shield]: https://img.shields.io/github/license/magnusoverli/ha_opencode.svg?style=for-the-badge
+[license-shield]: https://img.shields.io/github/license/magnusoverli/opencode.svg?style=for-the-badge
 [maintenance-shield]: https://img.shields.io/maintenance/yes/2026.svg?style=for-the-badge
-[aarch64-shield]: https://img.shields.io/github/actions/workflow/status/magnusoverli/ha_opencode/build-aarch64.yaml?style=for-the-badge&label=aarch64
-[amd64-shield]: https://img.shields.io/github/actions/workflow/status/magnusoverli/ha_opencode/build-amd64.yaml?style=for-the-badge&label=amd64
-[aarch64-workflow]: https://github.com/magnusoverli/ha_opencode/actions/workflows/build-aarch64.yaml
-[amd64-workflow]: https://github.com/magnusoverli/ha_opencode/actions/workflows/build-amd64.yaml
+[aarch64-shield]: https://img.shields.io/github/actions/workflow/status/magnusoverli/opencode/build-aarch64.yaml?style=for-the-badge&label=aarch64
+[amd64-shield]: https://img.shields.io/github/actions/workflow/status/magnusoverli/opencode/build-amd64.yaml?style=for-the-badge&label=amd64
+[aarch64-workflow]: https://github.com/magnusoverli/opencode/actions/workflows/build-aarch64.yaml
+[amd64-workflow]: https://github.com/magnusoverli/opencode/actions/workflows/build-amd64.yaml
