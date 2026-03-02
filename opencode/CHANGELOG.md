@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.5.1
+
+**Internal: Rename repo directory `ha_opencode/` to `opencode/`**
+
+- Renamed all non-breaking internal references (repo directory, s6 service name, CI paths, scripts)
+- Add-on slug and Docker image path unchanged — no impact on existing installs
+
 ## 1.5.0
 
 **Renamed to OpenCode + hab CLI Integration**
