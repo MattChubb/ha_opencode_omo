@@ -53,7 +53,7 @@ Smart YAML editing with entity autocomplete, live hover information, deprecation
 Validated config pipeline with automatic backup/restore. Multi-layered checks are designed to prevent AI-written config from breaking your HA instance.
 
 #### 🏗️ **hab CLI Integration**
-Includes [Home Assistant Builder CLI](https://github.com/balloob/home-assistant-build-cli) for full admin capabilities: dashboards, automations, areas, helpers, backups, and more.
+Includes the [Home Assistant Builder CLI](https://github.com/balloob/home-assistant-build-cli) by [@balloob](https://github.com/balloob) — a CLI purpose-built for AI agents to manage Home Assistant via REST and WebSocket APIs. Enables dashboard CRUD, area/floor management, helper creation, backup/restore, and bulk admin operations that would otherwise require direct API calls or UI interaction.
 
 </td>
 </tr>
@@ -249,6 +249,13 @@ Contributions of all kinds are welcome — feel free to open a PR!
 <sub><b>Magnus Overli</b></sub>
 </a><br />
 <sub>Creator & Maintainer</sub>
+</td>
+<td align="center">
+<a href="https://github.com/balloob">
+<img src="https://github.com/balloob.png" width="100px;" alt="Paulus Schoutsen"/><br />
+<sub><b>Paulus Schoutsen</b></sub>
+</a><br />
+<sub><a href="https://github.com/balloob/home-assistant-build-cli">hab CLI</a> — admin backbone</sub>
 </td>
 <td>
 
