@@ -23,7 +23,7 @@
  * - HA Repairs API integration (instance-specific deprecation warnings)
  * - HA Alerts feed integration (global integration issue awareness)
  * 
- * TOOLS (32):
+ * TOOLS (33):
  * - Entity state management (get, search, history)
  * - Service calls with intelligent targeting
  * - Configuration validation and safe writing
@@ -64,6 +64,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import WebSocket from "ws";
 import { readFileSync, writeFileSync, copyFileSync, unlinkSync, existsSync, mkdirSync } from "fs";
+import { execFile } from "child_process";
 import { dirname, join, resolve, isAbsolute, normalize } from "path";
 import { fileURLToPath } from "url";
 
@@ -2234,6 +2235,25 @@ const TOOLS = [
       idempotent: false,
     },
   },
+  {
+    name: "hab_run",
+    title: "Run hab CLI Command",
+    description: "Run a Home Assistant Builder (hab) CLI command. hab is a comprehensive admin CLI that covers the full Home Assistant admin area via REST and WebSocket APIs. Use this for: dashboard CRUD (create views, sections, cards), area/floor/zone/label management, helper entity creation, automation CRUD via API, script management, backup/restore, blueprint management, calendar operations, device management, entity groups, and search. hab outputs structured JSON. Examples: 'entity list --domain light', 'area create Kitchen', 'dashboard list', 'automation list', 'helper create input_boolean --name Guest Mode', 'backup list', 'system health'. Run with just 'help' to see all available command groups.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        command: {
+          type: "string",
+          description: "The hab command and arguments to run (without the 'hab' prefix). Examples: 'entity list', 'area create Kitchen', 'dashboard list', 'automation get my-automation', 'helper create input_boolean --name \"Guest Mode\"', 'backup create', 'system info'",
+        },
+      },
+      required: ["command"],
+    },
+    annotations: {
+      readOnly: false,
+      idempotent: false,
+    },
+  },
 ];
 
 // ============================================================================
@@ -4005,6 +4025,65 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         return makeCompatibleResponse({
           content: [createTextContent(responseText, { audience: ["user", "assistant"], priority: 0.9 })],
+        });
+      }
+
+      // === HAB CLI INTEGRATION ===
+      case "hab_run": {
+        const { command } = args;
+        if (!command || typeof command !== "string") {
+          throw new Error("command parameter is required and must be a string");
+        }
+        
+        // Security: block dangerous commands
+        const lowerCmd = command.toLowerCase().trim();
+        if (lowerCmd.startsWith("auth ") || lowerCmd === "auth") {
+          throw new Error("Auth commands are not needed - hab is pre-authenticated via Supervisor token.");
+        }
+        if (lowerCmd.startsWith("update") && !lowerCmd.startsWith("update ")) {
+          throw new Error("Self-update of hab is not supported inside the container. hab is updated with the add-on.");
+        }
+        
+        sendLog("info", "hab", { action: "run_command", command });
+        
+        // Parse command string into args array for execFile (safe, no shell injection)
+        const cmdArgs = command.match(/(?:[^\s"']+|"[^"]*"|'[^']*')/g) || [];
+        // Strip quotes from args
+        const cleanArgs = cmdArgs.map(arg => arg.replace(/^["']|["']$/g, ""));
+        
+        const result = await new Promise((resolvePromise, rejectPromise) => {
+          const proc = execFile("/usr/local/bin/hab", cleanArgs, {
+            timeout: 30000,
+            maxBuffer: 1024 * 1024,
+            env: {
+              ...process.env,
+              SUPERVISOR_TOKEN: SUPERVISOR_TOKEN,
+              HAB_URL: "http://supervisor/core",
+              HAB_TOKEN: SUPERVISOR_TOKEN,
+            },
+          }, (error, stdout, stderr) => {
+            if (error) {
+              // hab may return non-zero exit code with useful output
+              const output = stdout || stderr || error.message;
+              rejectPromise(new Error(`hab command failed: ${output}`));
+            } else {
+              resolvePromise(stdout);
+            }
+          });
+        });
+        
+        // Try to parse as JSON for structured output
+        let responseText;
+        try {
+          const parsed = JSON.parse(result);
+          responseText = "```json\n" + JSON.stringify(parsed, null, 2) + "\n```";
+        } catch {
+          // Not JSON, return as plain text
+          responseText = result.trim();
+        }
+        
+        return makeCompatibleResponse({
+          content: [createTextContent(responseText, { audience: ["user", "assistant"], priority: 0.7 })],
         });
       }
 

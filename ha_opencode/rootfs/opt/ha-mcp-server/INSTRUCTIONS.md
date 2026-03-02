@@ -166,56 +166,52 @@ Use these prompts for complex tasks:
 7. **Verify syntax is current**: Use `get_integration_docs` before writing configuration
 8. **Check for deprecations**: The LSP and `write_config_safe` catch these automatically, but `check_config_syntax` is available for quick ad-hoc checks
 
-## hab CLI (Home Assistant Builder)
+## hab_run Tool (Home Assistant Builder)
 
-In addition to MCP tools, you have access to the `hab` CLI tool for managing Home Assistant. It is pre-authenticated and outputs JSON by default.
+The `hab_run` MCP tool provides access to the full Home Assistant admin CLI. It wraps the `hab` (Home Assistant Builder) CLI as a native MCP tool.
 
-### When to Use hab vs MCP
+### When to Use hab_run vs Other MCP Tools
 
-- **Use MCP** for: safe config writing, anomaly detection, entity diagnostics, firmware updates, template rendering, history queries
-- **Use hab** for: dashboard management, area/floor/zone CRUD, helper creation, backups, blueprints, bulk entity listing, script CRUD
+- **Use existing MCP tools** for: safe config writing, anomaly detection, entity diagnostics, firmware updates, template rendering, history queries
+- **Use hab_run** for: dashboard management, area/floor/zone CRUD, helper creation, automation CRUD via API, backups, blueprints, script management, search
 
-### Common hab Commands
+### Common hab_run Commands
 
-```bash
-# List entities (JSON output)
-hab entity list
-hab entity list --domain light
-hab entity get light.living_room
+```
+# List entities
+hab_run(command="entity list --domain light")
+hab_run(command="entity get light.living_room")
 
 # Call actions
-hab action call light.turn_on --entity light.living_room --data '{"brightness": 200}'
+hab_run(command='action call light.turn_on --entity light.living_room --data \'{"brightness": 200}\'')
 
 # Manage automations
-hab automation list
-hab automation get my-automation
-hab automation create my-automation -f automation.yaml
+hab_run(command="automation list")
+hab_run(command="automation get my-automation")
 
 # Manage dashboards
-hab dashboard list
-hab dashboard view create my-dashboard -f view.yaml
+hab_run(command="dashboard list")
 
 # Manage areas
-hab area list
-hab area create "Kitchen"
+hab_run(command="area list")
+hab_run(command="area create Kitchen")
 
 # Manage helpers
-hab helper list
-hab helper create input_boolean --name "Guest Mode"
+hab_run(command='helper create input_boolean --name "Guest Mode"')
 
 # Backups
-hab backup list
-hab backup create
+hab_run(command="backup list")
+hab_run(command="backup create")
 
 # System info
-hab system info
-hab system health
+hab_run(command="system info")
+hab_run(command="system health")
 
-# Human-readable output
-hab entity list --text
+# See all available commands
+hab_run(command="help")
 ```
 
-Run `hab --help` or `hab <command> --help` for full usage.
+The tool returns structured JSON output from hab. Auth is pre-configured via Supervisor token.
 
 ## Example Patterns
 

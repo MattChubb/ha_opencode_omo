@@ -237,14 +237,35 @@ mkdir -p /data/.local/share/opencode
 mkdir -p /data/.config/opencode
 
 # ==============================================================================
-# Deploy AGENTS.md to Home Assistant config directory (first install only)
-# Users can customize this file using File Editor or any text editor
+# Verify hab CLI (Home Assistant Builder) is available
+# ==============================================================================
+
+if command -v hab &>/dev/null; then
+    HAB_VERSION=$(hab version 2>/dev/null | grep -oP '[\d.]+' | head -1 || echo "unknown")
+    bashio::log.info "hab CLI available (v${HAB_VERSION}) - pre-authenticated via Supervisor"
+else
+    bashio::log.warning "hab CLI not found - some admin features will be unavailable"
+fi
+
+# ==============================================================================
+# Deploy AGENTS.md to Home Assistant config directory
+# On first install: copy the full file
+# On update: if user hasn't customized it, refresh to get latest instructions
 # ==============================================================================
 
 if [ ! -f "/homeassistant/AGENTS.md" ]; then
     cp /opt/ha-mcp-server/AGENTS.md /homeassistant/AGENTS.md
     bashio::log.info "Deployed default AGENTS.md to /homeassistant/"
     bashio::log.info "You can customize AI instructions by editing AGENTS.md"
+else
+    # Check if the user has customized AGENTS.md by comparing a known marker
+    # If it still contains our marker comment, it's safe to update
+    if grep -q "# Home Assistant OpenCode Rules" /homeassistant/AGENTS.md 2>/dev/null; then
+        cp /opt/ha-mcp-server/AGENTS.md /homeassistant/AGENTS.md
+        bashio::log.info "Updated AGENTS.md with latest AI instructions"
+    else
+        bashio::log.info "AGENTS.md has been customized by user - skipping update"
+    fi
 fi
 
 # ==============================================================================
