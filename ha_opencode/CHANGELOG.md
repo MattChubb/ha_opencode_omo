@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.5.2
+
+**Rename: GitHub repository `ha_opencode` -> `opencode`**
+
+- Renamed GitHub repository from `magnusoverli/ha_opencode` to `magnusoverli/opencode`
+- All old URLs auto-redirect via GitHub — no action needed for existing users
+- Updated all repository URL references across config, docs, CI, and README
+- Reverted the directory rename from v1.5.1 — add-on directory must match slug for icon/logo discovery
+
 ## 1.5.1
 
 **Fix: Restore add-on logo in Home Assistant update notifications**
