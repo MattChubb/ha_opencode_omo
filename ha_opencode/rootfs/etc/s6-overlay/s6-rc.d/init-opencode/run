@@ -269,6 +269,41 @@ else
 fi
 
 # ==============================================================================
+# Inject live hab help output into AGENTS.md
+# Replaces the content between HAB_LIVE_HELP markers with current `hab --help`
+# output so the AI always sees the exact commands available in the installed
+# hab version — regardless of what was documented when the addon was built.
+# ==============================================================================
+
+if command -v hab &>/dev/null && [ -f "/homeassistant/AGENTS.md" ]; then
+    if grep -q "<!-- HAB_LIVE_HELP_START -->" /homeassistant/AGENTS.md 2>/dev/null; then
+        HAB_HELP_OUTPUT=$(hab --help 2>/dev/null || echo "")
+        if [ -n "${HAB_HELP_OUTPUT}" ]; then
+            printf '%s\n' "${HAB_HELP_OUTPUT}" > /tmp/hab_help.txt
+            awk '
+                /<!-- HAB_LIVE_HELP_START -->/ {
+                    print
+                    print "```"
+                    while ((getline line < "/tmp/hab_help.txt") > 0) print line
+                    print "```"
+                    skip=1
+                    next
+                }
+                /<!-- HAB_LIVE_HELP_END -->/ {
+                    skip=0
+                    print
+                    next
+                }
+                !skip { print }
+            ' /homeassistant/AGENTS.md > /tmp/agents_tmp \
+                && mv /tmp/agents_tmp /homeassistant/AGENTS.md
+            rm -f /tmp/hab_help.txt
+            bashio::log.info "Injected live hab help (v${HAB_VERSION}) into AGENTS.md"
+        fi
+    fi
+fi
+
+# ==============================================================================
 # Deploy Prettier config for HA YAML formatting (first install only)
 # Prettier auto-formats YAML files written by OpenCode to follow HA conventions
 # Users can customize .prettierrc.yaml to adjust formatting preferences

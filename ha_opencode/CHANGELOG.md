@@ -1,11 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-<!-- NEXT RELEASE NOTES (do not tag yet):
-- Users who experienced missing icons/logo after the repo rename to magnusoverli/opencode
-  need to uninstall and reinstall the add-on once to restore them. A standard update is
-  not sufficient — the Supervisor does not refresh icon cache on update alone.
--->
+## 1.5.3
+
+**hab CLI: Automated Update Tracking + Live Command Discovery**
+
+- **Automated hab update detection** — new weekly GitHub Actions workflow checks for new [hab CLI](https://github.com/balloob/home-assistant-build-cli) releases every Monday and opens a pull request automatically, keeping the version pins in `build.yaml` and `Dockerfile` in sync. Can also be triggered manually from the Actions tab.
+- **Dynamic hab help injection** — at container startup, `hab --help` output is injected live into `AGENTS.md` between sentinel markers, so the AI always sees the exact commands available in the installed hab version — no manual documentation update needed when hab gains new features
+- **Note for users who saw missing icons after the 1.5.2 repo rename**: a standard update is not sufficient to restore them — uninstall and reinstall the add-on once to refresh the Supervisor icon cache
 
 ## 1.5.2
 
