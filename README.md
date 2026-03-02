@@ -251,6 +251,13 @@ Contributions of all kinds are welcome — feel free to open a PR!
 <sub>Creator & Maintainer</sub>
 </td>
 <td align="center">
+<a href="https://github.com/Teeflo">
+<img src="https://github.com/Teeflo.png" width="100px;" alt="Teeflo"/><br />
+<sub><b>Teeflo</b></sub>
+</a><br />
+<sub>ARM64 fixes, README, icons & logo</sub>
+</td>
+<td align="center">
 <a href="https://github.com/balloob">
 <img src="https://github.com/balloob.png" width="100px;" alt="Paulus Schoutsen"/><br />
 <sub><b>Paulus Schoutsen</b></sub>
