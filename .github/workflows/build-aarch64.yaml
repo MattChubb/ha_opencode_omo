@@ -63,7 +63,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/ha_opencode/aarch64:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ github.repository_owner }}/ha_opencode/aarch64:latest
           build-args: |
-            BUILD_FROM=ghcr.io/home-assistant/aarch64-base-debian:bookworm
+            BUILD_FROM=ghcr.io/home-assistant/aarch64-base-debian:trixie
             BUILD_VERSION=${{ steps.version.outputs.version }}
             BUILD_ARCH=aarch64
           cache-from: type=gha
