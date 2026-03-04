@@ -1,9 +1,9 @@
 # Global ARGs (available in FROM instructions)
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
 ARG BUILD_ARCH
 
 ## Stage 1: Build hab CLI from source (main branch)
-FROM golang:1.24-bookworm AS hab-builder
+FROM golang:1.24-trixie AS hab-builder
 
 ARG BUILD_ARCH
 RUN git clone --depth 1 https://github.com/balloob/home-assistant-build-cli.git /src

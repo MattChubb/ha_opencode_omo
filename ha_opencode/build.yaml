@@ -1,10 +1,10 @@
 ---
-# Using Debian Bookworm base for glibc compatibility
+# Using Debian Trixie base for latest packages and glibc compatibility
 # (opencode-ai ships pre-compiled native binaries that require glibc)
 # Includes: S6-Overlay, Bashio, TempIO
 build_from:
-  aarch64: ghcr.io/home-assistant/aarch64-base-debian:bookworm
-  amd64: ghcr.io/home-assistant/amd64-base-debian:bookworm
+  aarch64: ghcr.io/home-assistant/aarch64-base-debian:trixie
+  amd64: ghcr.io/home-assistant/amd64-base-debian:trixie
 args:
   # Pin versions for reproducible builds (use 'latest' for auto-updates)
   OPENCODE_VERSION: "latest"

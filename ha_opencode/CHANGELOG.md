@@ -3,10 +3,11 @@ All notable changes to this project will be documented in this file.
 
 ## 1.5.3
 
-**hab CLI: Built from Source (main branch) + Live Command Discovery**
+**hab CLI from Source + Debian Trixie Base Image**
 
 - **hab CLI built from source** — hab is now compiled from the [main branch](https://github.com/balloob/home-assistant-build-cli) at each add-on release via a multi-stage Docker build, replacing the previous pinned release binary. This ensures the latest features and fixes are always included without waiting for upstream releases
 - **Removed daily/weekly release-tracking workflows** — the automated version-bump PRs (`update-hab-cli.yaml`, `check-hab-update.yaml`) have been replaced with a lightweight weekly status check that reports the latest commit on main
+- **Upgraded base image to Debian Trixie** — migrated from `bookworm` (Debian 12) to `trixie` (Debian 13), bringing Node.js 18 → 20, git 2.39 → 2.47, glibc 2.36 → 2.41, and newer versions of jq, curl, and tmux
 - **Dynamic hab help injection** — at container startup, `hab --help` output is injected live into `AGENTS.md` between sentinel markers, so the AI always sees the exact commands available in the installed hab version — no manual documentation update needed when hab gains new features
 - **Note for users who saw missing icons after the 1.5.2 repo rename**: a standard update is not sufficient to restore them — uninstall and reinstall the add-on once to refresh the Supervisor icon cache
 
