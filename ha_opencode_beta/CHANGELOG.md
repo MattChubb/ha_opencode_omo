@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.7.0b1
+
+- **New: Web UI mode** — set `ui_mode: web` in addon configuration to use
+  OpenCode's built-in browser interface instead of the terminal (ttyd + tmux)
+  - Cleaner chat-focused UI that runs behind an nginx reverse proxy
+  - All MCP and LSP features work identically in both modes
+  - Known limitation: no shell access (no `ha-logs`, `hab`, `git`, etc.)
+  - Default remains `tui` — existing setups are completely unaffected
+- nginx added to the container image for web mode ingress path rewriting
+- New `ui_mode` configuration option with `tui` (default) and `web` choices
+
 ## 1.6.1b16
 
 - **Fix `hab esphome` commands from shell** — root cause: `HAB_ESPHOME_URL` and
