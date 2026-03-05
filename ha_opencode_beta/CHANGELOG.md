@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.1b12
+
+- Fix ESPHome addon detection — Supervisor `/addons` API does not set
+  `installed: true`; check `state` and `version` fields instead
+  - This was the root cause of the MCP tool reporting "not installed"
+    even though ESPHome was running
+- Discovery now proceeds past addon detection to attempt the full ingress flow
+
 ## 1.6.1b11
 
 - Add detailed step-by-step diagnostics to ESPHome discovery
