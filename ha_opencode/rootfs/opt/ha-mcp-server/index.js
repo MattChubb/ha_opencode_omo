@@ -196,8 +196,18 @@ async function callSupervisor(endpoint, method = "GET", body = null) {
 // ============================================================================
 
 /**
- * Discover ESPHome add-on and return its internal URL
- * Returns null if ESPHome is not installed or not running
+ * Discover ESPHome add-on and return its URL via the Supervisor ingress proxy.
+ *
+ * ESPHome (since ~2026.2.x) no longer exposes the dashboard on a TCP port.
+ * The dashboard binds to a Unix socket, fronted by nginx with IP-based access
+ * rules that block requests from other addon containers.
+ *
+ * By routing through the Supervisor's ingress proxy (http://supervisor/ingress/{entry}/...)
+ * the TCP connection to ESPHome's nginx originates from the Supervisor's IP,
+ * which is in the nginx allow list.  This is the same path the browser-based
+ * HA frontend uses for ingress panels.
+ *
+ * Returns null if ESPHome is not installed or not running.
  */
 async function discoverESPHome() {
   try {
@@ -213,19 +223,37 @@ async function discoverESPHome() {
     
     const info = await callSupervisor(`/addons/${esphome.slug}/info`);
     
-    // Construct internal hostname: repository_slug with underscores replaced by hyphens
-    const hostname = `${esphome.repository}_${esphome.slug}`.replace(/_/g, "-");
+    const ingressEntry = info.ingress_entry;
+    if (!ingressEntry) {
+      sendLog("error", "esphome", { action: "discover", result: "no_ingress_entry" });
+      return null;
+    }
+    
+    // Create an ingress session — this is a short-lived token the Supervisor
+    // validates on every proxied request (via the ingress_session cookie).
+    // If this call fails with 403, the addon's hassio_role may need to be
+    // bumped from "default" to "manager" in config.yaml.
+    const sessionData = await callSupervisor("/ingress/session", "POST");
+    const ingressSession = sessionData.session;
+    if (!ingressSession) {
+      sendLog("error", "esphome", { action: "discover", result: "no_ingress_session" });
+      return null;
+    }
+    
+    // Route through the Supervisor's ingress proxy instead of connecting
+    // directly to the ESPHome container (which rejects our IP).
+    const url = `http://supervisor/ingress/${ingressEntry}`;
     
     const result = {
       slug: esphome.slug,
       name: esphome.name,
-      hostname,
-      url: `http://${hostname}:6052`,  // ESPHome dashboard port
+      url,
+      ingressSession,
       state: info.state,
       version: info.version,
     };
     
-    sendLog("debug", "esphome", { action: "discover", result });
+    sendLog("debug", "esphome", { action: "discover", result: { ...result, ingressSession: "[redacted]" } });
     return result;
   } catch (error) {
     sendLog("error", "esphome", { action: "discover_error", error: error.message });
@@ -235,25 +263,31 @@ async function discoverESPHome() {
 
 /**
  * Stream logs from ESPHome WebSocket endpoint
- * @param {string} baseUrl - ESPHome dashboard URL (e.g., http://core-esphome:6052)
+ * @param {string} baseUrl - ESPHome dashboard URL (Supervisor ingress URL)
  * @param {string} endpoint - WebSocket endpoint (e.g., "compile", "upload")
  * @param {object} params - Parameters to send (e.g., { configuration: "device.yaml" })
  * @param {function} onLine - Callback for each log line
  * @param {number} timeout - Timeout in milliseconds (default: 10 minutes for builds)
+ * @param {string|null} ingressSession - Ingress session token for the Supervisor proxy
  * @returns {Promise<{success: boolean, code: number, logs: string[]}>}
  */
-async function streamESPHomeLogs(baseUrl, endpoint, params, onLine = null, timeout = 600000) {
+async function streamESPHomeLogs(baseUrl, endpoint, params, onLine = null, timeout = 600000, ingressSession = null) {
   return new Promise((resolve, reject) => {
     const logs = [];
     const startTime = Date.now();
     
-    // Parse the URL and construct WebSocket URL
-    const url = new URL(baseUrl);
-    const wsUrl = `ws://${url.host}/${endpoint}`;
+    // Build WebSocket URL preserving the full path (important for ingress proxy)
+    const wsUrl = baseUrl.replace(/^http/, "ws").replace(/\/$/, "") + "/" + endpoint;
     
     sendLog("debug", "esphome", { action: "ws_connect", url: wsUrl, params });
     
-    const ws = new WebSocket(wsUrl);
+    // Pass ingress session cookie in the WebSocket upgrade handshake
+    const wsOptions = {};
+    if (ingressSession) {
+      wsOptions.headers = { Cookie: `ingress_session=${ingressSession}` };
+    }
+    
+    const ws = new WebSocket(wsUrl, wsOptions);
     
     // Set timeout
     const timeoutId = setTimeout(() => {
@@ -317,9 +351,15 @@ async function streamESPHomeLogs(baseUrl, endpoint, params, onLine = null, timeo
 
 /**
  * Get list of ESPHome devices via REST API
+ * @param {string} esphomeUrl - ESPHome dashboard URL (Supervisor ingress URL)
+ * @param {string|null} ingressSession - Ingress session token for the Supervisor proxy
  */
-async function getESPHomeDevices(esphomeUrl) {
-  const response = await fetch(`${esphomeUrl}/devices`);
+async function getESPHomeDevices(esphomeUrl, ingressSession = null) {
+  const headers = {};
+  if (ingressSession) {
+    headers["Cookie"] = `ingress_session=${ingressSession}`;
+  }
+  const response = await fetch(`${esphomeUrl}/devices`, { headers });
   if (!response.ok) {
     throw new Error(`Failed to get ESPHome devices: ${response.status}`);
   }
@@ -3736,7 +3776,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         }
         
         try {
-          const devices = await getESPHomeDevices(esphome.url);
+          const devices = await getESPHomeDevices(esphome.url, esphome.ingressSession);
           
           let responseText = `# ESPHome Devices\n\n`;
           responseText += `**ESPHome Version:** ${esphome.version}\n`;
@@ -3802,7 +3842,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             "compile",
             { configuration },
             null,
-            600000  // 10 minute timeout for compilation
+            600000,  // 10 minute timeout for compilation
+            esphome.ingressSession
           );
           
           // Format the output
@@ -3866,7 +3907,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             "upload",
             { configuration, port },
             null,
-            300000  // 5 minute timeout for upload
+            300000,  // 5 minute timeout for upload
+            esphome.ingressSession
           );
           
           // Format the output
@@ -4051,6 +4093,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // Strip quotes from args
         const cleanArgs = cmdArgs.map(arg => arg.replace(/^["']|["']$/g, ""));
         
+        // For esphome subcommands, pre-discover the ESPHome ingress URL so
+        // hab can skip its own (broken direct-connection) discovery and route
+        // through the Supervisor ingress proxy instead.
+        let esphomeEnv = {};
+        if (lowerCmd.startsWith("esphome ") || lowerCmd === "esphome") {
+          try {
+            const esphome = await discoverESPHome();
+            if (esphome && esphome.url && esphome.ingressSession) {
+              esphomeEnv.HAB_ESPHOME_URL = esphome.url;
+              esphomeEnv.HAB_ESPHOME_SESSION = esphome.ingressSession;
+            }
+          } catch (e) {
+            sendLog("warning", "hab", { action: "esphome_prediscovery_failed", error: e.message });
+          }
+        }
+        
         const result = await new Promise((resolvePromise, rejectPromise) => {
           const proc = execFile("/usr/local/bin/hab", cleanArgs, {
             timeout: 30000,
@@ -4060,6 +4118,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               SUPERVISOR_TOKEN: SUPERVISOR_TOKEN,
               HAB_URL: "http://supervisor/core",
               HAB_TOKEN: SUPERVISOR_TOKEN,
+              ...esphomeEnv,
             },
           }, (error, stdout, stderr) => {
             if (error) {
