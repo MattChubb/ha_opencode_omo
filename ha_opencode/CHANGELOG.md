@@ -1,6 +1,28 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.6.1
+
+**ESPHome Connectivity Fix + hab CLI Shell Support**
+
+ESPHome 2026.2+ moved its dashboard to a Unix socket behind nginx with IP-based access rules, breaking direct connections from addon containers. This release routes all ESPHome communication through HA Core's ingress proxy, restoring full functionality for both MCP tools and the hab CLI.
+
+### ESPHome Ingress Integration
+- **All ESPHome MCP tools working again** — `esphome_list_devices`, `esphome_compile`, and `esphome_upload` now route through HA Core's ingress proxy instead of connecting directly to the ESPHome container
+- **hab CLI ESPHome commands working from shell** — `hab esphome list`, `hab esphome logs`, etc. now work when run directly from the terminal, not just through the MCP `hab_run` tool
+- **New `access_token` configuration option** — a long-lived HA Core access token is required for ESPHome ingress authentication. Create one at Profile → Long-Lived Access Tokens in the HA UI and paste it into the addon's Configuration tab. Only needed if you use ESPHome tools
+- **Automatic HA Core URL discovery** — the addon auto-discovers your HA instance URL from `internal_url` in Settings → System → Network, with automatic fallback to network interface detection if the URL is set to "automatic"
+- **WebSocket ingress session creation** — ingress sessions are created via HA Core's WebSocket API (the only method accepted by the Supervisor), using the long-lived access token for authentication
+
+### Startup ESPHome Discovery
+- New `discover-esphome.js` startup script runs the same 5-step discovery flow as the MCP server (find addon → get ingress entry → resolve HA Core URL → create WebSocket session → build URL) and writes `HAB_ESPHOME_URL` and `HAB_ESPHOME_SESSION` to the environment so `hab esphome` commands work from the shell
+- Discovery is best-effort at addon startup — if ESPHome is not installed, not running, or the access token is missing, it skips silently
+
+### Other Changes
+- **Bumped `hassio_role` to `manager`** — required for ingress session creation via the Supervisor API
+- **Safer automation editing in AGENTS.md** — AI instructions now require reading all existing automations before writing to `automations.yaml`, preventing accidental overwrites
+- **Beta channel infrastructure** — added `ha_opencode_beta` addon directory and CI workflows for beta releases, enabling faster testing of experimental changes
+
 ## 1.6.0
 
 **hab CLI from Source + Debian Trixie Base Image**
