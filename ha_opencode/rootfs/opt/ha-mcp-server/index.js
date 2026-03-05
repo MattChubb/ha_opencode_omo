@@ -243,16 +243,19 @@ async function discoverESPHome() {
       return { ok: false, error: `Failed to list addons: ${e.message}`, diagnostics: diag };
     }
     
+    // The Supervisor /addons endpoint does NOT reliably set `installed: true`.
+    // Instead, an installed addon has a `state` field ("started", "stopped", etc.)
+    // and/or a `version` field with the installed version string.
     const esphome = addonsInfo.addons?.find(a => 
-      a.slug.includes("esphome") && a.installed
+      a.slug.includes("esphome") && (a.state === "started" || a.state === "stopped" || a.version)
     );
     
     if (!esphome) {
-      step("find_esphome", "error", "No addon with 'esphome' in slug and installed=true");
-      // Include available slugs for debugging
+      step("find_esphome", "error", "No installed addon with 'esphome' in slug");
+      // Include matching slugs and their fields for debugging
       const slugs = (addonsInfo.addons || [])
         .filter(a => a.slug.includes("esphome"))
-        .map(a => ({ slug: a.slug, installed: a.installed, state: a.state }));
+        .map(a => ({ slug: a.slug, installed: a.installed, version: a.version, state: a.state }));
       diag.esphomeSlugs = slugs;
       return { ok: false, error: "ESPHome addon not found in addon list.", diagnostics: diag };
     }
