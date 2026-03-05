@@ -72,8 +72,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const SUPERVISOR_API = "http://supervisor/core/api";
+const HA_CORE_DIRECT = "http://homeassistant:8123";   // Docker-internal, bypasses Supervisor
 const HA_CONFIG_DIR = "/homeassistant";
 const SUPERVISOR_TOKEN = process.env.SUPERVISOR_TOKEN;
+const HA_ACCESS_TOKEN = process.env.HA_ACCESS_TOKEN;   // Long-lived token for direct HA Core calls
 
 // Home Assistant documentation base URLs
 const HA_DOCS_BASE = "https://www.home-assistant.io";
@@ -232,20 +234,26 @@ async function discoverESPHome() {
     // Bypass the Supervisor entirely and talk directly to HA Core.
     // From inside an addon container, HA Core is reachable at
     // http://homeassistant:8123 (Docker internal hostname).
-    // The SUPERVISOR_TOKEN works as a Bearer token when the addon
-    // has homeassistant_api: true in config.yaml.
     //
-    // Previous attempts routing through the Supervisor proxy
-    // (http://supervisor/ingress/session and
-    //  http://supervisor/core/api/hassio/ingress/session)
-    // both returned 403.  Going directly to HA Core matches the
-    // code path that works from the CLI outside HA.
-    const HA_CORE_URL = "http://homeassistant:8123";
+    // The SUPERVISOR_TOKEN is NOT accepted by HA Core directly (401).
+    // A long-lived access token (HA_ACCESS_TOKEN) created via the HA UI
+    // is required.  This matches the code path that works from the CLI
+    // outside HA (targeting <LAN-IP>:8123 with a long-lived token).
+    if (!HA_ACCESS_TOKEN) {
+      sendLog("error", "esphome", {
+        action: "discover",
+        result: "no_access_token",
+        message: "ESPHome ingress requires a long-lived access token. " +
+          "Create one at Profile → Long-Lived Access Tokens in the HA UI, " +
+          "then paste it into the addon's 'access_token' configuration option.",
+      });
+      return null;
+    }
     
-    const sessionRes = await fetch(`${HA_CORE_URL}/api/hassio/ingress/session`, {
+    const sessionRes = await fetch(`${HA_CORE_DIRECT}/api/hassio/ingress/session`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${SUPERVISOR_TOKEN}`,
+        "Authorization": `Bearer ${HA_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
     });
@@ -264,7 +272,7 @@ async function discoverESPHome() {
     
     // Route requests directly through HA Core's ingress proxy:
     //   addon → HA Core → Supervisor ingress → ESPHome nginx
-    const url = `${HA_CORE_URL}/api/hassio_ingress/${ingressEntry}`;
+    const url = `${HA_CORE_DIRECT}/api/hassio_ingress/${ingressEntry}`;
     
     const result = {
       slug: esphome.slug,
@@ -303,10 +311,15 @@ async function streamESPHomeLogs(baseUrl, endpoint, params, onLine = null, timeo
     
     sendLog("debug", "esphome", { action: "ws_connect", url: wsUrl, params });
     
-    // Pass ingress session cookie in the WebSocket upgrade handshake
-    const wsOptions = {};
+    // Pass ingress session cookie + Bearer token in the WebSocket upgrade handshake.
+    // HA Core's ingress proxy requires the Bearer token for auth; the Supervisor
+    // ingress handler requires the session cookie.
+    const wsOptions = { headers: {} };
     if (ingressSession) {
-      wsOptions.headers = { Cookie: `ingress_session=${ingressSession}` };
+      wsOptions.headers["Cookie"] = `ingress_session=${ingressSession}`;
+    }
+    if (HA_ACCESS_TOKEN) {
+      wsOptions.headers["Authorization"] = `Bearer ${HA_ACCESS_TOKEN}`;
     }
     
     const ws = new WebSocket(wsUrl, wsOptions);
@@ -380,6 +393,11 @@ async function getESPHomeDevices(esphomeUrl, ingressSession = null) {
   const headers = {};
   if (ingressSession) {
     headers["Cookie"] = `ingress_session=${ingressSession}`;
+  }
+  // When routing through HA Core's ingress proxy, the Bearer token is
+  // required for HA Core auth; the cookie is for the Supervisor's ingress.
+  if (HA_ACCESS_TOKEN) {
+    headers["Authorization"] = `Bearer ${HA_ACCESS_TOKEN}`;
   }
   const response = await fetch(`${esphomeUrl}/devices`, { headers });
   if (!response.ok) {
@@ -2105,9 +2123,9 @@ const TOOLS = [
           type: "boolean",
           description: "If true (default), extract and validate Jinja2 templates through HA's template engine.",
         },
-        allow_fewer_entries: {
+        confirm_deletions: {
           type: "boolean",
-          description: "If true, allow writing fewer top-level list entries than the existing file (e.g. when intentionally deleting automations). Default: false. Without this flag, writes to automations.yaml, scripts.yaml, or scenes.yaml that would reduce the number of entries are blocked to prevent accidental data loss.",
+          description: "If true, confirms that you intentionally want to remove entries from this file (e.g. deleting an automation, script, or scene). Default: false. Without this flag, writes to automations.yaml, scripts.yaml, or scenes.yaml that would reduce the number of entries are blocked to prevent accidental data loss.",
         },
       },
       required: ["file_path", "content"],
@@ -3158,7 +3176,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       // === SAFE CONFIG WRITER ===
       case "write_config_safe": {
-        const { file_path, content, dry_run = false, validate_templates = true, allow_fewer_entries = false } = args;
+        const { file_path, content, dry_run = false, validate_templates = true, confirm_deletions = false } = args;
         sendLog("info", "config", { action: "write_config_safe", file_path, dry_run });
         
         // Step 1: Validate and resolve the file path
@@ -3236,7 +3254,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const isListConfig = LIST_CONFIG_FILES.some(f => resolvedPath.endsWith("/" + f));
         let entryReductionError = null;
 
-        if (isListConfig && !allow_fewer_entries && existsSync(resolvedPath)) {
+        if (isListConfig && !confirm_deletions && existsSync(resolvedPath)) {
           try {
             const existingContent = readFileSync(resolvedPath, "utf-8");
             const existingCount = (existingContent.match(/^- /gm) || []).length;
@@ -3267,7 +3285,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             if (entryReductionError) {
               responseText += `- **Entry Reduction Blocked:** The existing file has ${entryReductionError.existingCount} top-level entries but the new content only has ${entryReductionError.newCount} (${entryReductionError.removed} would be lost).\n`;
               responseText += `  **Action:** Read the existing \`${file_path}\` first, then include ALL existing entries plus your new entry in the content you write.\n`;
-              responseText += `  If you intentionally want to remove entries, pass \`allow_fewer_entries: true\`.\n`;
+              responseText += `  If you intentionally want to remove entries, pass \`confirm_deletions: true\`.\n`;
             }
             responseText += `\n`;
           }
@@ -3338,7 +3356,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }
           if (entryReductionError) {
             responseText += `- **Entry Reduction Blocked:** The existing file has ${entryReductionError.existingCount} top-level entries but the new content only has ${entryReductionError.newCount} (${entryReductionError.removed} would be permanently lost).\n`;
-            responseText += `\n**Action:** Read the existing \`${file_path}\` first, then include ALL existing entries plus your new entry in the content you write. If you intentionally want to remove entries, pass \`allow_fewer_entries: true\`.\n`;
+            responseText += `\n**Action:** Read the existing \`${file_path}\` first, then include ALL existing entries plus your new entry in the content you write. If you intentionally want to remove entries, pass \`confirm_deletions: true\`.\n`;
           } else {
             responseText += `\n**Action:** Fix the errors above and retry. Use \`dry_run: true\` to validate before writing.\n`;
           }
@@ -4172,6 +4190,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               SUPERVISOR_TOKEN: SUPERVISOR_TOKEN,
               HAB_URL: "http://supervisor/core",
               HAB_TOKEN: SUPERVISOR_TOKEN,
+              ...(HA_ACCESS_TOKEN ? { HA_ACCESS_TOKEN } : {}),
               ...esphomeEnv,
             },
           }, (error, stdout, stderr) => {
