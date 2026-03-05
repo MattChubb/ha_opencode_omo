@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.6.1b7
+
+- Support "automatic" internal_url setting (most common HA default)
+  - When `/api/config` returns `internal_url: null`, fall back to discovering the
+    host's LAN IP from Supervisor's `/network/info` (primary connected interface)
+    and Core port from `/core/info`
+  - No longer requires manually setting internal_url in HA Network settings
+
 ## 1.6.1b6
 
 - Use WebSocket for ingress session creation (REST path rejected by Supervisor)

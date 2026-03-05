@@ -247,13 +247,50 @@ async function discoverESPHome() {
       return null;
     }
     
-    // Discover HA Core's actual URL (e.g. http://192.168.1.100:8123)
+    // Discover HA Core's actual URL (e.g. http://192.168.1.100:8123).
+    // Try /api/config first (internal_url), fall back to building it from
+    // the Supervisor's network + core info when set to "automatic" (null).
+    let haCoreUrl;
     const haConfig = await callHA("/config");
-    const haCoreUrl = (haConfig.internal_url || haConfig.external_url || "").replace(/\/+$/, "");
+    haCoreUrl = (haConfig.internal_url || haConfig.external_url || "").replace(/\/+$/, "");
+    
+    if (!haCoreUrl) {
+      // internal_url is "automatic" (null) — discover from Supervisor APIs
+      sendLog("debug", "esphome", { action: "discover", step: "fallback_network_discovery" });
+      try {
+        const [coreInfo, networkInfo] = await Promise.all([
+          callSupervisor("/core/info"),
+          callSupervisor("/network/info"),
+        ]);
+        
+        const port = coreInfo.port || 8123;
+        const ssl = coreInfo.ssl || false;
+        const protocol = ssl ? "https" : "http";
+        
+        // Find the primary connected interface and extract its LAN IP
+        let hostIp = null;
+        if (networkInfo.interfaces) {
+          const primary = networkInfo.interfaces.find(i => i.primary && i.connected);
+          const iface = primary || networkInfo.interfaces.find(i => i.connected);
+          if (iface?.ipv4?.address?.[0]) {
+            // Address is in CIDR format: "192.168.1.100/24"
+            hostIp = iface.ipv4.address[0].split("/")[0];
+          }
+        }
+        
+        if (hostIp) {
+          haCoreUrl = `${protocol}://${hostIp}:${port}`;
+          sendLog("debug", "esphome", { action: "discover", step: "url_from_network", url: haCoreUrl });
+        }
+      } catch (e) {
+        sendLog("warning", "esphome", { action: "discover", step: "network_discovery_failed", error: e.message });
+      }
+    }
+    
     if (!haCoreUrl) {
       sendLog("error", "esphome", { action: "discover", result: "no_ha_url",
-        message: "Could not determine HA Core URL from /api/config (no internal_url or external_url). " +
-          "Set internal_url in Settings → System → Network." });
+        message: "Could not determine HA Core URL. Set internal_url in Settings → System → Network, " +
+          "or ensure the host has a connected network interface." });
       return null;
     }
     sendLog("debug", "esphome", { action: "discover", ha_core_url: haCoreUrl });
