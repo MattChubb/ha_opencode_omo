@@ -203,10 +203,10 @@ async function callSupervisor(endpoint, method = "GET", body = null) {
  * The dashboard binds to a Unix socket, fronted by nginx with IP-based access
  * rules that block requests from other addon containers.
  *
- * We discover HA Core's real LAN URL from /api/config (internal_url) and route
- * requests through it using a long-lived access token — the exact same path
- * the external CLI uses.  HA Core's ingress proxy forwards to the Supervisor,
- * which connects to ESPHome from its own IP (allowed by nginx).
+ * We discover HA Core's real LAN URL from /api/config (internal_url), create
+ * an ingress session via WebSocket (the only method that works), and route
+ * requests through HA Core's ingress proxy using a long-lived access token.
+ * This is the exact same path the external CLI uses.
  *
  * Returns null if ESPHome is not installed or not running.
  */
@@ -231,13 +231,11 @@ async function discoverESPHome() {
     }
     
     // Route through HA Core's real LAN URL — the same path the external CLI
-    // uses.  The Supervisor's internal hostnames (supervisor, homeassistant)
-    // don't work for ingress because HA Core runs with host networking and
-    // the Supervisor blocks addon-initiated ingress session creation.
+    // uses.  REST-based ingress session creation does NOT work (the Supervisor
+    // rejects it regardless of token type).  Only the WebSocket `supervisor/api`
+    // command creates sessions with HA Core's own credentials.
     //
-    // We discover the real URL via callHA("/config") (which works through
-    // the Supervisor proxy) and then talk to HA Core directly using the
-    // long-lived access token configured in the addon options.
+    // Flow:  callHA("/config") → internal_url → WS connect → auth → supervisor/api
     if (!HA_ACCESS_TOKEN) {
       sendLog("error", "esphome", {
         action: "discover",
@@ -254,28 +252,16 @@ async function discoverESPHome() {
     const haCoreUrl = (haConfig.internal_url || haConfig.external_url || "").replace(/\/+$/, "");
     if (!haCoreUrl) {
       sendLog("error", "esphome", { action: "discover", result: "no_ha_url",
-        message: "Could not determine HA Core URL from /api/config (no internal_url or external_url)" });
+        message: "Could not determine HA Core URL from /api/config (no internal_url or external_url). " +
+          "Set internal_url in Settings → System → Network." });
       return null;
     }
     sendLog("debug", "esphome", { action: "discover", ha_core_url: haCoreUrl });
     
-    const sessionRes = await fetch(`${haCoreUrl}/api/hassio/ingress/session`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${HA_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    });
-    if (!sessionRes.ok) {
-      const text = await sessionRes.text();
-      sendLog("error", "esphome", { action: "discover", result: "session_failed", status: sessionRes.status, error: text, url: haCoreUrl });
-      return null;
-    }
-    const sessionResponse = await sessionRes.json();
-    // HA Core forwards the Supervisor response as-is: {result, data:{session}}
-    const ingressSession = sessionResponse?.data?.session;
+    // Create ingress session via WebSocket — the only method that works.
+    const ingressSession = await createIngressSessionViaWebSocket(haCoreUrl, HA_ACCESS_TOKEN);
     if (!ingressSession) {
-      sendLog("error", "esphome", { action: "discover", result: "no_ingress_session", response: sessionResponse });
+      sendLog("error", "esphome", { action: "discover", result: "no_ingress_session" });
       return null;
     }
     
@@ -298,6 +284,80 @@ async function discoverESPHome() {
     sendLog("error", "esphome", { action: "discover_error", error: error.message });
     return null;
   }
+}
+
+/**
+ * Create an ingress session via HA Core's WebSocket API.
+ * This is the ONLY method that works — REST-based session creation is rejected
+ * by the Supervisor regardless of token type.  The WebSocket `supervisor/api`
+ * command lets HA Core make the Supervisor call with its own credentials.
+ *
+ * @param {string} haCoreUrl - HA Core URL (e.g. http://192.168.1.100:8123)
+ * @param {string} token - Long-lived access token
+ * @returns {Promise<string|null>} Ingress session token, or null on failure
+ */
+async function createIngressSessionViaWebSocket(haCoreUrl, token) {
+  return new Promise((resolve, reject) => {
+    const wsUrl = haCoreUrl.replace(/^http/, "ws") + "/api/websocket";
+    sendLog("debug", "esphome", { action: "ws_session", url: wsUrl });
+
+    const ws = new WebSocket(wsUrl);
+    let msgId = 1;
+    const timeout = setTimeout(() => {
+      ws.close();
+      reject(new Error("WebSocket session creation timed out"));
+    }, 15000);
+
+    ws.on("open", () => {
+      sendLog("debug", "esphome", { action: "ws_session_open" });
+    });
+
+    ws.on("message", (data) => {
+      try {
+        const msg = JSON.parse(data.toString());
+
+        if (msg.type === "auth_required") {
+          ws.send(JSON.stringify({ type: "auth", access_token: token }));
+        } else if (msg.type === "auth_ok") {
+          // Create ingress session via supervisor/api command
+          const id = msgId++;
+          ws.send(JSON.stringify({
+            id,
+            type: "supervisor/api",
+            endpoint: "/ingress/session",
+            method: "post",
+          }));
+        } else if (msg.type === "auth_invalid") {
+          clearTimeout(timeout);
+          ws.close();
+          sendLog("error", "esphome", { action: "ws_session_auth_failed", message: msg.message });
+          resolve(null);
+        } else if (msg.type === "result") {
+          clearTimeout(timeout);
+          ws.close();
+          if (msg.success && msg.result?.session) {
+            sendLog("debug", "esphome", { action: "ws_session_created" });
+            resolve(msg.result.session);
+          } else {
+            sendLog("error", "esphome", { action: "ws_session_failed", result: msg });
+            resolve(null);
+          }
+        }
+      } catch (e) {
+        sendLog("error", "esphome", { action: "ws_session_parse_error", error: e.message });
+      }
+    });
+
+    ws.on("error", (err) => {
+      clearTimeout(timeout);
+      sendLog("error", "esphome", { action: "ws_session_error", error: err.message });
+      reject(err);
+    });
+
+    ws.on("close", () => {
+      clearTimeout(timeout);
+    });
+  });
 }
 
 /**
