@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.1b6
+
+- Use WebSocket for ingress session creation (REST path rejected by Supervisor)
+  - REST `POST /api/hassio/ingress/session` is always rejected — only the WebSocket
+    `supervisor/api` command works (HA Core makes the call with its own credentials)
+  - MCP server: new `createIngressSessionViaWebSocket()` function
+  - HAB CLI: delegates to `discoverESPHomeViaWebSocket()` (same path as external CLI)
+  - Still uses `internal_url` from `/api/config` + long-lived access token
+
 ## 1.6.1b5
 
 - Use HA Core's real LAN URL instead of Docker-internal hostnames
