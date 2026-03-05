@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.1b15
+
+- **Final beta before stable release**
+- Picks up latest HAB CLI changes from main branch (built from source at
+  image build time) — includes upstream improvements for addon support
+- AGENTS.md: safer automation editing workflow — AI must now read and
+  preserve all existing automations before writing, with explicit warning
+  against overwriting `automations.yaml`
+
 ## 1.6.1b14
 
 - Fix doubled ingress path in URL construction — `ingress_entry` from the

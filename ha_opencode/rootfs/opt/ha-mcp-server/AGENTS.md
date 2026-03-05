@@ -576,12 +576,15 @@ Be especially careful with these frequently-changed areas:
 ## Common Tasks
 
 ### Creating an Automation
-1. Understand the goal and identify trigger conditions
-2. Determine required entities (search if MCP available)
-3. Draft the automation YAML with clear comments
-4. **Show the draft to the user and wait for approval**
-5. Only write the file after explicit user confirmation
-6. Suggest testing approach
+1. **Read the existing `automations.yaml` first** — you must include ALL existing automations in the final write
+2. Understand the goal and identify trigger conditions
+3. Determine required entities (search if MCP available)
+4. Draft the automation YAML with clear comments
+5. **Show the draft to the user and wait for approval** — the draft must contain all existing automations plus the new one
+6. Only write the file after explicit user confirmation
+7. Suggest testing approach
+
+> **WARNING:** Never write only the new automation to `automations.yaml`. The file must always contain the full list of all automations. `write_config_safe` will block any write that would reduce the number of entries, but you should verify this yourself before presenting the draft to the user.
 
 ### Troubleshooting
 1. Check entity states and history (via MCP if available)
