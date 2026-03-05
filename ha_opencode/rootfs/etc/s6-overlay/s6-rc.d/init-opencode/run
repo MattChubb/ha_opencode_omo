@@ -17,6 +17,8 @@ CPU_MODE_CONFIG=$(bashio::config 'cpu_mode' || echo "auto")
 MCP_ENABLED=$(bashio::config 'mcp_enabled')
 LSP_ENABLED=$(bashio::config 'lsp_enabled' || echo "true")
 
+ACCESS_TOKEN=$(bashio::config 'access_token' || echo "")
+
 bashio::log.info "Configuration: MCP=${MCP_ENABLED} LSP=${LSP_ENABLED} CPU_MODE=${CPU_MODE_CONFIG}"
 
 # ==============================================================================
@@ -65,6 +67,19 @@ if [ "${ENV_VARS_COUNT}" -gt 0 ]; then
     bashio::log.info "Environment variables written to ${ENV_VARS_FILE}"
 else
     bashio::log.info "No user-defined environment variables configured"
+fi
+
+# ==============================================================================
+# Export HA Core long-lived access token (for ESPHome ingress)
+# Appended AFTER user env vars so it survives the rm -f above.
+# ==============================================================================
+
+if [ -n "${ACCESS_TOKEN}" ]; then
+    printf 'export HA_ACCESS_TOKEN=%q\n' "${ACCESS_TOKEN}" >> "${ENV_VARS_FILE}"
+    chmod 600 "${ENV_VARS_FILE}"
+    bashio::log.info "HA Core access token configured (for ESPHome ingress)"
+else
+    bashio::log.info "No HA Core access token configured (ESPHome tools may not work)"
 fi
 
 # ==============================================================================

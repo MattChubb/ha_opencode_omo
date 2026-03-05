@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.6.1b4
+
+- Add `access_token` config option for HA Core long-lived access token
+  - Required for ESPHome ingress (SUPERVISOR_TOKEN is not accepted by HA Core directly)
+  - Create at: HA UI → Profile → Long-Lived Access Tokens
+  - Paste into addon Configuration → `access_token`
+- Use HA access token for all HA Core direct calls (session creation + ingress requests)
+- Clear error message when access token is missing and ESPHome tools are used
+
 ## 1.6.1b3
 
 - Bypass Supervisor proxy entirely for ESPHome ingress

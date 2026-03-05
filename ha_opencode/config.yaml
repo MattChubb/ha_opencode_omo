@@ -48,6 +48,11 @@ options:
   cursor_style: "block"
   cursor_blink: false
   
+  # Long-lived access token for direct HA Core API access.
+  # Required for ESPHome ingress (create at: Profile → Long-Lived Access Tokens).
+  # Leave empty if you don't use ESPHome tools.
+  access_token: ""
+
   # Environment variables to inject into the container
   env_vars: []
   
@@ -67,6 +72,9 @@ schema:
   font_size: int(10,24)
   cursor_style: list(block|underline|bar)
   cursor_blink: bool
+
+  # HA Core access token
+  access_token: str?
   
   # Environment variables
   env_vars:
