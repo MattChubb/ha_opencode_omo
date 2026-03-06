@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.7.0b3
+
+- **Fix: web UI "Could not connect to server"** — HA ingress enforces
+  `Content-Security-Policy: script-src 'self' 'wasm-unsafe-eval'` which
+  blocked the inline `<script>` that set the API base URL, causing the
+  OpenCode client to fall back to `location.origin` (missing the ingress
+  path prefix) and 404 on every API call (`/global/health`, `/global/event`,
+  etc.). Fixed by serving the ingress URL detection logic as an external
+  JS file (`/ha-ingress-fix.js`) via an nginx `return 200` block — external
+  scripts from the same origin satisfy CSP `'self'`
+- Known limitation: custom fonts (Inter, Blex Mono) 404 because the JS
+  bundle references them with absolute paths (`/assets/...`) that bypass
+  ingress. System fallback fonts are used instead — purely cosmetic
+
 ## 1.7.0b2
 
 - **Fix: web UI mode crash on startup** — nginx refused to start due to a
