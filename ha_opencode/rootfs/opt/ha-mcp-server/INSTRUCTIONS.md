@@ -88,7 +88,7 @@ Use the documentation tools proactively:
 | `get_integration_docs` | **Before writing ANY integration config** |
 | `get_breaking_changes` | When config stopped working, or checking compatibility |
 | `check_config_syntax` | Before presenting YAML to user |
-| `write_config_safe` | **ALWAYS use this to write config files** (see below) |
+| `write_config_safe` | **ALWAYS use this to write config files** — blocks accidental content loss (see below) |
 
 ### Common Deprecations to Watch For
 - **Template sensors**: `platform: template` under `sensor:` -> use top-level `template:`
@@ -107,14 +107,18 @@ Use the documentation tools proactively:
 ```
 1. get_config()                                        -> Know the HA version
 2. get_integration_docs("name")                        -> Get CURRENT syntax
-3. Draft config using docs syntax                      -> Not from memory!
-4. write_config_safe(path, yaml, dry_run=true)         -> Pre-validate everything
-5. If errors: fix and repeat step 4
-6. Show user the validated config and get approval
-7. write_config_safe(path, yaml)                       -> Write for real (validated + backed up)
+3. read_file(path)                                     -> Read the EXISTING file content first
+4. Draft config: include ALL existing content + new changes
+5. write_config_safe(path, yaml, dry_run=true)         -> Pre-validate everything
+6. If errors: fix and repeat step 5
+7. Show user the validated config and get approval
+8. write_config_safe(path, yaml)                       -> Write for real (validated + backed up)
 ```
 
+**CRITICAL: Always read the target file BEFORE writing to it.** The draft must include all existing content plus your changes. Never write only the new content — this will overwrite and destroy existing configuration.
+
 The `write_config_safe` tool performs these checks automatically:
+- **Content protection** — blocks writes that would remove list entries, drop top-level keys, or significantly shrink the file
 - **Deprecation scanning** — 20+ patterns, auto-updated from GitHub between add-on releases
 - **Jinja2 template validation** — sends every template through HA's own engine
 - **Structural validation** — checks for missing required keys in automations, scripts, etc.
@@ -123,6 +127,7 @@ The `write_config_safe` tool performs these checks automatically:
 - **HA Alerts** — checks alerts.home-assistant.io for known integration issues affecting your config
 - **Full HA config validation** — calls HA Core's check_config (same as `ha core check`)
 - **Automatic backup/restore** — if validation fails after writing, restores the original file
+- **Backup retention** — `.bak` files are kept as a recovery point even after successful writes
 
 **If validation fails, the original file is automatically restored. The multi-layered validation pipeline is designed to prevent invalid config from reaching your HA instance.**
 
@@ -158,8 +163,9 @@ Use these prompts for complex tasks:
 ## Best Practices
 
 1. **Check before changing**: Use `get_states` before `call_service` to verify current state
-2. **Always use write_config_safe**: This is the safest way to write config — it validates and auto-restores on failure
-3. **Pre-validate with dry_run**: Use `write_config_safe(path, yaml, dry_run=true)` before presenting config to the user
+2. **Always read before writing**: Read the existing file first, then include ALL existing content plus your changes
+3. **Always use write_config_safe**: This is the safest way to write config — it validates, protects against content loss, and auto-restores on failure
+4. **Pre-validate with dry_run**: Use `write_config_safe(path, yaml, dry_run=true)` before presenting config to the user
 4. **Use history for debugging**: Use `get_history` when troubleshooting intermittent issues
 5. **Leverage relationships**: Use `get_entity_details` to find related entities
 6. **Be specific with services**: Always specify `entity_id` in the target for `call_service`
@@ -238,21 +244,23 @@ The tool returns structured JSON output from hab. Auth is pre-configured via Sup
 ```
 1. search_entities() to find relevant entities
 2. get_services() to understand available services
-3. Draft automation YAML
-4. write_config_safe("automations.yaml", yaml, dry_run=true)  -> Pre-validate
-5. Show user and get approval
-6. write_config_safe("automations.yaml", yaml)                -> Write safely
+3. read_file("automations.yaml")                              -> Read ALL existing automations
+4. Draft automation YAML including ALL existing + new
+5. write_config_safe("automations.yaml", yaml, dry_run=true)  -> Pre-validate
+6. Show user and get approval
+7. write_config_safe("automations.yaml", yaml)                -> Write safely
 ```
 
 ### Write configuration for an integration (IMPORTANT!)
 ```
 1. get_config()                              -> Check HA version
 2. get_integration_docs(integration="mqtt")  -> Get current syntax
-3. Draft configuration using CURRENT syntax from docs
-4. write_config_safe(path, yaml, dry_run=true)  -> Pre-validate (deprecations + templates + HA check)
-5. If errors: fix and repeat step 4
-6. Present validated config to user
-7. write_config_safe(path, yaml)             -> Write for real (auto backup + validation)
+3. read_file(path)                           -> Read the EXISTING file content
+4. Draft config: include ALL existing content + new changes
+5. write_config_safe(path, yaml, dry_run=true)  -> Pre-validate (deprecations + templates + HA check)
+6. If errors: fix and repeat step 5
+7. Present validated config to user
+8. write_config_safe(path, yaml)             -> Write for real (auto backup + validation)
 ```
 
 ### User reports "config stopped working after update"

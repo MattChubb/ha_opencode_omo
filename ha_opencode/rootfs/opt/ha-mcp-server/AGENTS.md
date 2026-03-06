@@ -478,7 +478,7 @@ Query and interact with the running Home Assistant instance:
 - `call_service` - Control devices (with confirmation)
 - `get_history`, `get_logbook` - Historical data
 - `get_devices`, `get_areas` - Device and area registry info
-- `write_config_safe` - **Safe config writing with automatic validation and backup/restore**
+- `write_config_safe` - **Safe config writing with automatic validation, content protection, and backup**
 - `validate_config` - Check configuration validity
 - `get_error_log` - System errors and warnings
 - `diagnose_entity` - Comprehensive entity troubleshooting
@@ -543,7 +543,7 @@ Home Assistant releases monthly updates with new features, deprecations, and bre
 |------|-------------|
 | `get_integration_docs` | Before writing ANY integration configuration |
 | `get_breaking_changes` | When user reports config stopped working after update |
-| `write_config_safe` | **ALWAYS use to write config files** — validates and auto-restores on failure |
+| `write_config_safe` | **ALWAYS use to write config files** — validates, blocks accidental content loss, and auto-restores on failure |
 | `check_config_syntax` | Quick ad-hoc deprecation check (write_config_safe includes this automatically) |
 
 ### Workflow Example
@@ -553,11 +553,12 @@ When a user asks "Help me set up a template sensor":
 ```
 1. get_config()                                          -> Check HA version (e.g., 2024.12.1)
 2. get_integration_docs("template")                      -> Get current syntax and examples
-3. Draft configuration using CURRENT syntax from docs
-4. write_config_safe(path, yaml, dry_run=true)           -> Pre-validate everything
-5. If errors: fix and repeat step 4
-6. Present validated config to user and get approval
-7. write_config_safe(path, yaml)                         -> Write for real (auto backup + validation)
+3. read_file(path)                                       -> Read the EXISTING file content first
+4. Draft configuration: include ALL existing content + new changes
+5. write_config_safe(path, yaml, dry_run=true)           -> Pre-validate everything
+6. If errors: fix and repeat step 5
+7. Present validated config to user and get approval
+8. write_config_safe(path, yaml)                         -> Write for real (auto backup + validation)
 ```
 
 ### Common Deprecation Patterns
@@ -584,7 +585,7 @@ Be especially careful with these frequently-changed areas:
 6. Only write the file after explicit user confirmation
 7. Suggest testing approach
 
-> **WARNING:** Never write only the new automation to `automations.yaml`. The file must always contain the full list of all automations. `write_config_safe` will block any write that would reduce the number of entries, but you should verify this yourself before presenting the draft to the user.
+> **WARNING:** Never write partial content to ANY config file. Always read the existing file first and include ALL existing content in your write. `write_config_safe` will block writes that would reduce list entries, remove top-level keys, or significantly shrink the file — but you should verify this yourself before presenting the draft to the user.
 
 ### Troubleshooting
 1. Check entity states and history (via MCP if available)

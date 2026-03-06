@@ -2302,7 +2302,7 @@ const TOOLS = [
   {
     name: "write_config_safe",
     title: "Safe Config Writer",
-    description: "Write YAML configuration to a file with automatic validation. Checks for deprecations, validates Jinja2 templates through HA's engine, verifies structural correctness, and runs HA's full config check. If validation fails, the original file is restored and errors are returned for correction. Use dry_run=true to validate without writing. This is the recommended way to write configuration files.",
+    description: "Write YAML configuration to a file with automatic validation and content protection. Checks for deprecations, validates Jinja2 templates through HA's engine, verifies structural correctness, and runs HA's full config check. If validation fails, the original file is restored and errors are returned for correction. IMPORTANT: This tool blocks writes that would accidentally reduce content — removing list entries, dropping top-level keys, or significantly shrinking the file. Always read the existing file first and include all existing content in your write. Use dry_run=true to validate without writing.",
     inputSchema: {
       type: "object",
       properties: {
@@ -2324,7 +2324,7 @@ const TOOLS = [
         },
         confirm_deletions: {
           type: "boolean",
-          description: "If true, confirms that you intentionally want to remove entries from this file (e.g. deleting an automation, script, or scene). Default: false. Without this flag, writes to automations.yaml, scripts.yaml, or scenes.yaml that would reduce the number of entries are blocked to prevent accidental data loss.",
+          description: "If true, confirms that you intentionally want to reduce content in this file. Default: false. Without this flag, writes are blocked if they would: (1) reduce list entries in automations.yaml/scripts.yaml/scenes.yaml, (2) remove top-level keys from mapping files like configuration.yaml, or (3) reduce the file size by more than 50%. This prevents accidental data loss when the AI writes without reading the existing file first.",
         },
       },
       required: ["file_path", "content"],
@@ -3446,26 +3446,77 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const templateErrors = templateResults.filter(r => r.status === "error");
         const structuralErrors = structuralIssues.filter(i => i.severity === "error");
         
-        // Step 6b: Check if writing would reduce entries in list-based config files
-        // (automations.yaml, scripts.yaml, scenes.yaml are YAML lists where accidental
-        // overwrites destroy existing entries — block unless explicitly allowed)
-        const LIST_CONFIG_FILES = ["automations.yaml", "scripts.yaml", "scenes.yaml"];
-        const isListConfig = LIST_CONFIG_FILES.some(f => resolvedPath.endsWith("/" + f));
-        let entryReductionError = null;
+        // Step 6b: Content protection checks — prevent accidental data loss
+        // These checks compare the new content against the existing file to catch
+        // cases where the AI writes a replacement instead of an augmentation.
+        // Three layers of defense:
+        //   1. List-entry reduction  (automations.yaml, scripts.yaml, scenes.yaml)
+        //   2. Top-level key removal (mapping files like configuration.yaml)
+        //   3. Significant size reduction (generic safety net for all files)
+        let contentProtectionError = null;
 
-        if (isListConfig && !confirm_deletions && existsSync(resolvedPath)) {
+        if (!confirm_deletions && existsSync(resolvedPath)) {
           try {
             const existingContent = readFileSync(resolvedPath, "utf-8");
-            const existingCount = (existingContent.match(/^- /gm) || []).length;
-            const newCount = (content.match(/^- /gm) || []).length;
-            if (existingCount > 0 && newCount < existingCount) {
-              entryReductionError = { existingCount, newCount, removed: existingCount - newCount };
+
+            // --- Check 1: List-entry reduction (list-based config files) ---
+            const LIST_CONFIG_FILES = ["automations.yaml", "scripts.yaml", "scenes.yaml"];
+            const isListConfig = LIST_CONFIG_FILES.some(f => resolvedPath.endsWith("/" + f));
+
+            if (isListConfig) {
+              const existingCount = (existingContent.match(/^- /gm) || []).length;
+              const newCount = (content.match(/^- /gm) || []).length;
+              if (existingCount > 0 && newCount < existingCount) {
+                contentProtectionError = {
+                  type: "entry_reduction",
+                  detail: `The existing file has ${existingCount} top-level list entries but the new content only has ${newCount} (${existingCount - newCount} would be lost).`,
+                  action: `Read the existing \`${file_path}\` first, then include ALL existing entries plus your changes in the content you write. If you intentionally want to remove entries, pass \`confirm_deletions: true\`.`,
+                };
+              }
             }
+
+            // --- Check 2: Top-level key preservation (mapping-based files) ---
+            // For files like configuration.yaml that use top-level keys (homeassistant:,
+            // automation:, sensor:, etc.), block writes that would remove existing keys.
+            if (!contentProtectionError && !isListConfig) {
+              const keyRegex = /^([a-z_][a-z0-9_]*):/gm;
+              const existingKeys = new Set();
+              const newKeys = new Set();
+              let m;
+              while ((m = keyRegex.exec(existingContent)) !== null) existingKeys.add(m[1]);
+              keyRegex.lastIndex = 0;
+              while ((m = keyRegex.exec(content)) !== null) newKeys.add(m[1]);
+
+              const removedKeys = [...existingKeys].filter(k => !newKeys.has(k));
+              if (existingKeys.size > 0 && removedKeys.length > 0) {
+                contentProtectionError = {
+                  type: "key_removal",
+                  detail: `The existing file has ${existingKeys.size} top-level keys but the new content is missing ${removedKeys.length}: \`${removedKeys.join("`, `")}\`.`,
+                  action: `Read the existing \`${file_path}\` first, then include ALL existing top-level keys plus your changes. If you intentionally want to remove keys, pass \`confirm_deletions: true\`.`,
+                };
+              }
+            }
+
+            // --- Check 3: Significant size reduction (generic safety net) ---
+            // For ANY config file, if the new content is dramatically smaller than
+            // the existing file, it likely means the AI didn't read the file first.
+            if (!contentProtectionError) {
+              const existingLines = existingContent.split("\n").length;
+              const newLines = content.split("\n").length;
+              if (existingLines > 10 && newLines < existingLines * 0.5) {
+                contentProtectionError = {
+                  type: "size_reduction",
+                  detail: `The existing file has ${existingLines} lines but the new content only has ${newLines} lines (${Math.round((1 - newLines / existingLines) * 100)}% reduction).`,
+                  action: `Read the existing \`${file_path}\` first and ensure your new content includes all intended configuration. If this reduction is intentional, pass \`confirm_deletions: true\`.`,
+                };
+              }
+            }
+
           } catch (_) { /* best effort — don't block if we can't read the existing file */ }
         }
 
-        // Step 6c: Check for pre-write blocking errors (template errors + structural errors + entry reduction)
-        const hasBlockingErrors = templateErrors.length > 0 || structuralErrors.length > 0 || entryReductionError !== null;
+        // Step 6c: Check for pre-write blocking errors (template errors + structural errors + content protection)
+        const hasBlockingErrors = templateErrors.length > 0 || structuralErrors.length > 0 || contentProtectionError !== null;
         
         // If dry_run, report results without touching disk
         if (dry_run) {
@@ -3481,10 +3532,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             for (const si of structuralErrors) {
               responseText += `- **Structural Error:** ${si.message}\n`;
             }
-            if (entryReductionError) {
-              responseText += `- **Entry Reduction Blocked:** The existing file has ${entryReductionError.existingCount} top-level entries but the new content only has ${entryReductionError.newCount} (${entryReductionError.removed} would be lost).\n`;
-              responseText += `  **Action:** Read the existing \`${file_path}\` first, then include ALL existing entries plus your new entry in the content you write.\n`;
-              responseText += `  If you intentionally want to remove entries, pass \`confirm_deletions: true\`.\n`;
+            if (contentProtectionError) {
+              const label = contentProtectionError.type === "entry_reduction" ? "Entry Reduction Blocked"
+                : contentProtectionError.type === "key_removal" ? "Top-Level Key Removal Blocked"
+                : "Significant Size Reduction Blocked";
+              responseText += `- **${label}:** ${contentProtectionError.detail}\n`;
+              responseText += `  **Action:** ${contentProtectionError.action}\n`;
             }
             responseText += `\n`;
           }
@@ -3553,9 +3606,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           for (const si of structuralErrors) {
             responseText += `- **Structural Error:** ${si.message}\n`;
           }
-          if (entryReductionError) {
-            responseText += `- **Entry Reduction Blocked:** The existing file has ${entryReductionError.existingCount} top-level entries but the new content only has ${entryReductionError.newCount} (${entryReductionError.removed} would be permanently lost).\n`;
-            responseText += `\n**Action:** Read the existing \`${file_path}\` first, then include ALL existing entries plus your new entry in the content you write. If you intentionally want to remove entries, pass \`confirm_deletions: true\`.\n`;
+          if (contentProtectionError) {
+            const label = contentProtectionError.type === "entry_reduction" ? "Entry Reduction Blocked"
+              : contentProtectionError.type === "key_removal" ? "Top-Level Key Removal Blocked"
+              : "Significant Size Reduction Blocked";
+            responseText += `- **${label}:** ${contentProtectionError.detail}\n`;
+            responseText += `\n**Action:** ${contentProtectionError.action}\n`;
           } else {
             responseText += `\n**Action:** Fix the errors above and retry. Use \`dry_run: true\` to validate before writing.\n`;
           }
@@ -3664,10 +3720,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }
         }
         
-        // Clean up backup only on confirmed valid result
-        if (validationResult === "valid" && hadExistingFile) {
-          try { unlinkSync(backupPath); } catch (_) { /* best effort */ }
-        }
+        // Retain .bak file as a recovery point — do NOT delete on success.
+        // The backup always contains the file content from right before this write.
+        // The next write_config_safe call to this file will overwrite it with the
+        // then-current version, so there is always one recovery point available.
         
         // Step 11: Build response
         const success = validationResult === "valid";
@@ -4774,7 +4830,7 @@ Please help me create this automation by following these steps in order:
 6. Define the action(s) to take
 7. Provide the complete YAML that contains ALL existing automations PLUS the new one
 
-**CRITICAL:** When writing to \`automations.yaml\`, the content must include every automation that was already there. Writing only the new automation will permanently delete all others. \`write_config_safe\` will block the write if entries would be lost, but always verify yourself first.
+**CRITICAL:** When writing to ANY config file, the content must include everything that was already there. Writing only new content will permanently delete existing configuration. \`write_config_safe\` will block writes that would lose list entries, drop top-level keys, or significantly shrink the file — but always verify yourself first by reading the file before writing.
 
 Consider edge cases and make the automation robust.`,
               annotations: { audience: ["assistant"], priority: 1.0 },

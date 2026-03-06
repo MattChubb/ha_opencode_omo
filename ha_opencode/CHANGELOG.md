@@ -1,6 +1,30 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.6.2
+
+**write_config_safe: Generalized content protection for all config files**
+
+Addresses [#14](https://github.com/magnusoverli/opencode/issues/14) — after the earlier fix protected list-based files (automations.yaml, scripts.yaml, scenes.yaml), a user reported that `configuration.yaml` was overwritten when the AI wrote only a to-do list integration without reading the existing file. The entry-count guard only covered list files; mapping-based files like `configuration.yaml` had no protection.
+
+### Content Protection (3 layers)
+
+- **Top-level key preservation** — for mapping-based YAML files (e.g. `configuration.yaml`), `write_config_safe` now parses existing top-level keys and blocks any write that would remove them. If `configuration.yaml` has `homeassistant:`, `automation:`, `sensor:`, etc., a write containing only `todo:` is blocked with a clear error message instructing the AI to read the file first
+- **Significant size reduction guard** — for ALL config files, writes that would reduce the file by more than 50% (by line count) are blocked. This is a generic safety net that catches destructive writes regardless of file structure
+- **List-entry reduction** (existing) — the previous protection for `automations.yaml`, `scripts.yaml`, and `scenes.yaml` remains in place, now integrated into the unified content protection system
+
+All three checks can be bypassed with `confirm_deletions: true` for intentional removals.
+
+### Backup Retention
+
+- `.bak` files are no longer deleted after a successful write. The backup always contains the file content from right before the last write, providing a recovery point even when a destructive write passes HA validation
+
+### Agent Instructions
+
+- All workflow examples in AGENTS.md and INSTRUCTIONS.md now include an explicit `read_file()` step before writing
+- Warnings broadened from automation-specific to all config files
+- Tool description updated to mention content protection
+
 ## 1.6.1
 
 **ESPHome Connectivity Fix + hab CLI Shell Support**
