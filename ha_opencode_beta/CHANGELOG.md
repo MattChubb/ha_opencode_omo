@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.7.0b2
+
+- **Fix: web UI mode crash on startup** — nginx refused to start due to a
+  literal `$` in a `sub_filter` JavaScript regex (`/\/$/`), which nginx
+  interpreted as a variable reference. Rewrote the ingress path injection
+  to use `endsWith()`+`slice()` instead, avoiding `$` entirely
+- **Fix: duplicate MIME type warning** — removed redundant
+  `sub_filter_types text/html` (already the default)
+- **Fix: port 8100 stuck after crash** — the backgrounded `opencode web`
+  process was orphaned when nginx died (due to `exec` replacing the shell),
+  blocking the port on every restart attempt. Now uses `trap 'kill 0'` for
+  process group cleanup and `wait -n` to detect when either process exits
+- **write_config_safe: generalized content protection** — blocks writes that
+  would remove top-level keys from mapping files (e.g. `configuration.yaml`)
+  or significantly shrink any config file. Addresses [#14](https://github.com/magnusoverli/opencode/issues/14)
+- `.bak` files are now retained after successful writes as a recovery point
+
 ## 1.7.0b1
 
 - **New: Web UI mode** — set `ui_mode: web` in addon configuration to use
