@@ -50,6 +50,13 @@ export NODE_OPTIONS="--max-old-space-size=512"
 if [ "${UI_MODE}" = "web" ]; then
     bashio::log.info "Starting OpenCode Web UI on port 8099 (Home Assistant ingress)..."
 
+    # Ensure all child processes are killed when this script exits.
+    # 'kill 0' sends the signal to the entire process group, which covers
+    # both the backgrounded opencode web and nginx. Without this, a failed
+    # nginx start leaves the opencode process orphaned and holding port 8100,
+    # causing every subsequent restart attempt to fail.
+    trap 'kill 0' EXIT TERM INT
+
     # Start opencode web server on internal port 8100.
     # nginx on port 8099 handles ingress path rewriting and proxies to it.
     cd /homeassistant
@@ -65,7 +72,20 @@ if [ "${UI_MODE}" = "web" ]; then
     fi
 
     bashio::log.info "opencode web running (pid ${OPENCODE_PID}), starting nginx proxy on 8099..."
-    exec nginx -c /etc/nginx/opencode-web.conf
+
+    # Run nginx in the background and wait for either process to exit.
+    # If one dies, the EXIT trap kills the other via 'kill 0'.
+    # (We can't use 'exec nginx' because that replaces the shell and
+    # loses the ability to clean up the backgrounded opencode process.)
+    nginx -c /etc/nginx/opencode-web.conf &
+    NGINX_PID=$!
+
+    # wait -n: return as soon as ANY child exits (bash 4.3+)
+    wait -n "${OPENCODE_PID}" "${NGINX_PID}" 2>/dev/null
+    EXIT_CODE=$?
+
+    bashio::log.error "Process exited unexpectedly (code ${EXIT_CODE}), shutting down..."
+    exit "${EXIT_CODE}"
 fi
 
 # ==============================================================================
