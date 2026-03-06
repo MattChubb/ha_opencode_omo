@@ -469,7 +469,7 @@ Analyzes your setup and suggests:
 
 ## Safe Config Writing
 
-The `write_config_safe` MCP tool provides a complete validation pipeline when writing Home Assistant YAML configuration files. Instead of blind file writes, every change goes through multiple safety checks with automatic rollback on failure.
+The `write_config_safe` MCP tool provides a complete validation pipeline when writing Home Assistant YAML configuration files. Instead of blind file writes, every change goes through multiple safety checks — including content protection against accidental data loss — with automatic rollback on failure.
 
 ### Validation Pipeline
 
@@ -483,9 +483,14 @@ When you (or the AI agent) write configuration through `write_config_safe`, the 
    - The public **HA Alerts** feed (integration-level advisories with version ranges)
 3. **Structural validation** — Verifies that automations have `trigger` + `action`, scripts have `sequence`, template sensors have `state`, and other structural requirements are met
 4. **Jinja2 template validation** — Extracts all `{{ }}` and `{% %}` blocks and validates them against HA's template rendering engine. Templates containing runtime-only variables (`trigger.*`, `this.*`, `context.*`, etc.) are skipped since they can't be validated outside their execution context
-5. **File write with backup** — Creates a timestamped `.bak` copy of the existing file before writing the new content
-6. **HA Core config check** — Calls Home Assistant's configuration validation API to catch errors that static analysis can't
-7. **Auto-restore on failure** — If the config check fails, the backup is automatically restored and the error is reported
+5. **Content protection** — Compares the new content against the existing file to prevent accidental data loss:
+   - **List-entry reduction** — For `automations.yaml`, `scripts.yaml`, and `scenes.yaml`, blocks writes that would reduce the number of top-level list entries
+   - **Top-level key preservation** — For mapping-based files like `configuration.yaml`, blocks writes that would remove existing top-level keys
+   - **Significant size reduction** — For all files, blocks writes that would reduce the file by more than 50% by line count
+   - All three checks can be bypassed with `confirm_deletions: true` for intentional removals
+6. **File write with backup** — Creates a `.bak` copy of the existing file before writing the new content. The backup is retained even after a successful write as a recovery point
+7. **HA Core config check** — Calls Home Assistant's configuration validation API to catch errors that static analysis can't
+8. **Auto-restore on failure** — If the config check fails, the backup is automatically restored and the error is reported
 
 ### Dry Run Mode
 
