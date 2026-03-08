@@ -21,7 +21,7 @@ ARG BUILD_VERSION
 ARG BUILD_ARCH
 ARG TTYD_VERSION=1.7.7
 ARG OPENCODE_VERSION=latest
-ARG BUN_VERSION=1.2.5
+ARG BUN_VERSION=1.3.10
 
 # Environment for better Node.js performance
 ENV NODE_ENV=production \
