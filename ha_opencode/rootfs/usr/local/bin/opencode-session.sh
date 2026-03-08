@@ -19,6 +19,7 @@ if [ -z "$SUPERVISOR_TOKEN" ]; then
     echo "Warning: SUPERVISOR_TOKEN not set. MCP integration may not work."
 fi
 
+
 # Ensure directories exist
 mkdir -p "${HOME}/.local/share/opencode"
 mkdir -p "${HOME}/.config/opencode"

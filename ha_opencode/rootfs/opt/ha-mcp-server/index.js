@@ -76,6 +76,15 @@ const HA_CONFIG_DIR = "/homeassistant";
 const SUPERVISOR_TOKEN = process.env.SUPERVISOR_TOKEN;
 const HA_ACCESS_TOKEN = process.env.HA_ACCESS_TOKEN;   // Long-lived token for direct HA Core calls
 
+// Clear error message when ESPHome tools are used without an access token
+const ESPHOME_TOKEN_ERROR = "ESPHome tools require a Long-Lived Access Token.\n\n" +
+  "To configure:\n" +
+  "1. Go to your Home Assistant Profile page (click your user icon)\n" +
+  "2. Scroll to Long-Lived Access Tokens and create one\n" +
+  "3. Go to Settings → Add-ons → OpenCode → Configuration\n" +
+  "4. Paste the token into the 'access_token' field\n" +
+  "5. Restart the OpenCode add-on (with ESPHome already running)";
+
 // Home Assistant documentation base URLs
 const HA_DOCS_BASE = "https://www.home-assistant.io";
 const HA_INTEGRATIONS_URL = `${HA_DOCS_BASE}/integrations`;
@@ -4092,6 +4101,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "esphome_list_devices": {
         sendLog("info", "esphome", { action: "list_devices" });
         
+        if (!HA_ACCESS_TOKEN) {
+          throw new Error(ESPHOME_TOKEN_ERROR);
+        }
+        
         // Discover ESPHome add-on
         const esphome = await discoverESPHome();
         if (!esphome.ok) {
@@ -4174,6 +4187,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { device } = args;
         sendLog("info", "esphome", { action: "compile", device });
         
+        if (!HA_ACCESS_TOKEN) {
+          throw new Error(ESPHOME_TOKEN_ERROR);
+        }
+        
         // Discover ESPHome add-on
         const esphome = await discoverESPHome();
         if (!esphome.ok) {
@@ -4241,6 +4258,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case "esphome_upload": {
         const { device, port } = args;
         sendLog("info", "esphome", { action: "upload", device, port });
+        
+        if (!HA_ACCESS_TOKEN) {
+          throw new Error(ESPHOME_TOKEN_ERROR);
+        }
         
         // Discover ESPHome add-on
         const esphome = await discoverESPHome();
@@ -4455,6 +4476,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         // through the Supervisor ingress proxy instead.
         let esphomeEnv = {};
         if (lowerCmd.startsWith("esphome ") || lowerCmd === "esphome") {
+          if (!HA_ACCESS_TOKEN) {
+            throw new Error(ESPHOME_TOKEN_ERROR);
+          }
           try {
             const esphome = await discoverESPHome();
             if (esphome.ok && esphome.url && esphome.ingressSession) {
