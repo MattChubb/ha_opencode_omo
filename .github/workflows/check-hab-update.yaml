@@ -1,0 +1,40 @@
+---
+name: Check hab CLI Update
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 09:00 UTC
+  workflow_dispatch:
+
+jobs:
+  check-hab-update:
+    name: Check for hab CLI updates on main
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Get latest commit on main
+        id: latest
+        run: |
+          COMMIT=$(curl -fsSL "https://api.github.com/repos/balloob/home-assistant-build-cli/commits/main" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            | jq -r '.sha' | head -c 12)
+          DATE=$(curl -fsSL "https://api.github.com/repos/balloob/home-assistant-build-cli/commits/main" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            | jq -r '.commit.committer.date')
+          echo "commit=${COMMIT}" >> $GITHUB_OUTPUT
+          echo "date=${DATE}" >> $GITHUB_OUTPUT
+          echo "Latest hab CLI commit on main: ${COMMIT} (${DATE})"
+
+      - name: Summary
+        run: |
+          echo "## hab CLI (main branch) status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Latest commit | \`${{ steps.latest.outputs.commit }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit date | ${{ steps.latest.outputs.date }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "hab CLI is built from source (main branch) at each add-on release." >> $GITHUB_STEP_SUMMARY
+          echo "To pick up the latest changes, tag a new add-on release." >> $GITHUB_STEP_SUMMARY

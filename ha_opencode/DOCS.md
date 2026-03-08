@@ -1,6 +1,6 @@
-# HA OpenCode
+# OpenCode
 
-HA OpenCode is an AI-powered coding agent that helps you edit and manage your Home Assistant configuration directly from your browser.
+OpenCode is an AI-powered coding agent that helps you edit and manage your Home Assistant configuration directly from your browser.
 
 ## Features
 
@@ -20,8 +20,9 @@ Configure the app from the **Configuration** tab in the app page.
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| **Enable MCP Home Assistant Integration** | `false` | Enable the Model Context Protocol (MCP) server for deep Home Assistant integration. Includes 19 tools, 9 resources, 6 guided prompts, and an intelligence layer for anomaly detection and automation suggestions. |
+| **Enable MCP Home Assistant Integration** | `true` | Enable the Model Context Protocol (MCP) server for deep Home Assistant integration. Includes 33 tools, 13 resources, 6 guided prompts, and an intelligence layer for anomaly detection, config validation, and automation suggestions. |
 | **Enable LSP Home Assistant Integration** | `true` | Enable the Language Server Protocol (LSP) server for intelligent YAML editing. Provides entity/service autocomplete, hover documentation, diagnostics for unknown entities, and go-to-definition for !include tags. |
+| **UI Mode** | `tui` | Controls how OpenCode is displayed. `tui` uses a full terminal (ttyd + tmux) with shell access. `web` uses OpenCode's built-in browser UI — a cleaner interface but without shell access. See [Web UI Mode](#web-ui-mode) below. |
 
 ### Terminal Appearance
 
@@ -31,6 +32,49 @@ Configure the app from the **Configuration** tab in the app page.
 | **Font Size** | `14` | Terminal font size in pixels (10-24) |
 | **Cursor Style** | `block` | Cursor appearance: `block`, `underline`, or `bar` |
 | **Blinking Cursor** | `false` | Whether the cursor should blink |
+
+### Web UI Mode
+
+Setting **UI Mode** to `web` replaces the default terminal with OpenCode's built-in browser interface. This provides a cleaner chat-focused experience that some users prefer over the full terminal.
+
+#### How It Works
+
+- OpenCode's web server runs on an internal port, with an nginx reverse proxy handling Home Assistant ingress path rewriting
+- The browser UI connects to the OpenCode API automatically — no additional configuration needed
+- All MCP and LSP features work identically in both modes
+
+#### Known Limitation: No Shell Access
+
+Web mode does **not** provide a shell. You cannot run terminal commands (`ha-logs`, `hab`, `git`, etc.) from the web UI. If you need shell access alongside the AI chat, use the default `tui` mode.
+
+#### Switching Modes
+
+1. Go to the add-on **Configuration** tab
+2. Change **UI Mode** from `tui` to `web` (or vice versa)
+3. Save and restart the add-on
+
+Switching modes does not affect your OpenCode sessions, API credentials, or configuration — all data is preserved.
+
+### Advanced Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| **CPU Mode** | `auto` | Controls which OpenCode binary is used. `auto` detects your CPU capabilities automatically (recommended). `baseline` forces the baseline binary for older CPUs without AVX2 support. `regular` forces the standard binary. |
+| **Environment Variables** | `[]` | Define custom environment variables that are available to OpenCode and the terminal shell. Each entry has a `name` and `value`. Useful for provider credentials or configuration that must be set as environment variables (e.g. `AZURE_RESOURCE_NAME`, `OPENAI_API_KEY`). Changes take effect after restarting the add-on. Critical system variables (`HOME`, `PATH`, `SUPERVISOR_TOKEN`, etc.) cannot be overridden. |
+| **Custom OpenCode Configuration (JSON)** | `""` | Paste a JSON object to customize OpenCode's own configuration (providers, keybindings, etc.). This is merged with the add-on's built-in config. Leave empty for defaults. See [OpenCode config docs](https://opencode.ai/docs/config) for the full schema. |
+
+#### Environment Variables Example
+
+To set environment variables for an Azure OpenAI provider, add entries in the Configuration tab:
+
+| Name | Value |
+|------|-------|
+| `AZURE_RESOURCE_NAME` | `my-azure-resource` |
+| `AZURE_API_KEY` | `sk-...` |
+
+After saving and restarting the add-on, these variables will be available in the terminal and to OpenCode. You can then use `/connect` inside OpenCode to configure your provider.
+
+> **Note:** Environment variable values are stored on disk inside the container and are excluded from Home Assistant backups. However, they are visible in the add-on's Configuration tab. Treat them with the same care as any stored credential.
 
 ### Theme Previews
 
@@ -49,7 +93,7 @@ Configure the app from the **Configuration** tab in the app page.
 
 ### 1. Open the App
 
-Click on **HA OpenCode** in the Home Assistant sidebar to open the terminal.
+Click on **OpenCode** in the Home Assistant sidebar to open the terminal.
 
 ### 2. Configure Your AI Provider
 
@@ -103,6 +147,90 @@ The app includes helper commands:
 | `ha-mcp disable` | Disable Home Assistant MCP integration |
 | `ha-mcp status` | Check MCP integration status |
 | `ha-mcp test` | Test MCP server connection |
+| `hab --help` | Show hab CLI help (Home Assistant Builder) |
+| `hab entity list` | List all entities via hab CLI |
+| `hab area list` | List all areas via hab CLI |
+
+## Home Assistant Builder CLI (hab)
+
+The app includes [hab](https://github.com/balloob/home-assistant-build-cli) (Home Assistant Builder), a CLI utility designed for AI agents to manage Home Assistant configurations. It is pre-authenticated via the Supervisor token and outputs JSON by default.
+
+### What hab Provides
+
+`hab` covers the full admin area of Home Assistant via REST and WebSocket APIs:
+
+| Command Group | Description |
+|---------------|-------------|
+| `hab entity` | List entities, get entity state |
+| `hab action` | Call Home Assistant actions/services |
+| `hab automation` | Create, list, get, update, delete automations |
+| `hab script` | Create, list, get, update, delete scripts |
+| `hab dashboard` | Manage dashboards, views, sections, cards |
+| `hab area` | Create, list, delete areas |
+| `hab floor` | Manage floors |
+| `hab zone` | Manage zones |
+| `hab label` | Manage labels |
+| `hab helper` | Create and manage helper entities (input_boolean, counter, timer, etc.) |
+| `hab backup` | Create and restore backups |
+| `hab calendar` | Manage calendar events |
+| `hab blueprint` | Manage blueprints |
+| `hab system` | System info, health checks |
+| `hab device` | Device management |
+| `hab group` | Manage entity groups |
+| `hab search` | Search for items and relationships |
+
+### How hab Complements MCP
+
+Both tools are available and each has strengths:
+
+| Feature | MCP Server | hab CLI |
+|---------|------------|---------|
+| **Safe config writing** | Primary (validated pipeline) | N/A |
+| **Anomaly detection** | Primary | N/A |
+| **Entity diagnostics** | Primary | N/A |
+| **Firmware updates** | Primary (real-time monitoring) | N/A |
+| **Dashboard CRUD** | N/A | Primary |
+| **Area/floor/zone CRUD** | Read-only | Full CRUD |
+| **Helper management** | N/A | Primary |
+| **Backup/restore** | N/A | Primary |
+| **Blueprint management** | N/A | Primary |
+| **Automation CRUD** | Via config files | Via API |
+
+### Usage Examples
+
+```bash
+# List all light entities
+hab entity list --domain light
+
+# Get a specific entity state
+hab entity get sensor.living_room_temperature
+
+# Call an action
+hab action call light.turn_on --entity light.living_room --data '{"brightness": 200}'
+
+# Create an automation from a YAML file
+hab automation create my-automation -f automation.yaml
+
+# Create an automation with inline YAML
+hab automation create my-automation <<'EOF'
+alias: Motion Light
+trigger:
+  - platform: state
+    entity_id: binary_sensor.motion
+    to: "on"
+action:
+  - service: light.turn_on
+    target:
+      entity_id: light.living_room
+EOF
+
+# Human-readable output
+hab entity list --text
+```
+
+Run `hab --help` or `hab <command> --help` for complete documentation.
+
+---
 
 ## Home Assistant MCP Integration
 
@@ -112,8 +240,8 @@ The app includes an enhanced MCP (Model Context Protocol) server that provides d
 
 | Capability | Count | Description |
 |------------|-------|-------------|
-| **Tools** | 19 | Actions and queries for interacting with HA |
-| **Resources** | 9 + templates | Browsable data exposed to the AI |
+| **Tools** | 33 | Actions, queries, config validation, device management, and hab CLI |
+| **Resources** | 9 + 4 templates | Browsable data exposed to the AI |
 | **Prompts** | 6 | Pre-built guided workflows for common tasks |
 | **Intelligence** | Built-in | Anomaly detection, suggestions, semantic search |
 
@@ -137,7 +265,7 @@ Then restart OpenCode (exit and run `opencode` again).
 
 ---
 
-## MCP Tools (19 Available)
+## MCP Tools (33 Available)
 
 ### State Management
 
@@ -162,7 +290,7 @@ Then restart OpenCode (exit and run `opencode` again).
 | `get_logbook` | Get activity timeline showing what happened |
 | `get_error_log` | Retrieve Home Assistant error log |
 
-### Configuration
+### Configuration & Validation
 
 | Tool | Description |
 |------|-------------|
@@ -170,6 +298,8 @@ Then restart OpenCode (exit and run `opencode` again).
 | `get_areas` | List all defined areas with IDs and names |
 | `get_devices` | List devices, optionally filtered by area |
 | `validate_config` | Validate configuration files before restarting |
+| `write_config_safe` | **Safe config writer** — writes YAML with automatic validation, backup/restore, template checking, and deprecation scanning. See [Safe Config Writing](#safe-config-writing) below. |
+| `check_config_syntax` | Analyze YAML for deprecated syntax patterns and suggest modern alternatives |
 
 ### Events & Templates
 
@@ -192,6 +322,43 @@ Then restart OpenCode (exit and run `opencode` again).
 | `detect_anomalies` | Scan for issues: low batteries, unusual readings, open doors, etc. |
 | `get_suggestions` | Get automation and optimization suggestions based on your setup |
 | `diagnose_entity` | Run diagnostics on a problematic entity |
+
+### Documentation & Breaking Changes
+
+| Tool | Description |
+|------|-------------|
+| `get_integration_docs` | Fetch live documentation for any HA integration directly from home-assistant.io |
+| `get_breaking_changes` | Check for breaking changes that may affect your configuration after an update |
+
+### Update Management
+
+| Tool | Description |
+|------|-------------|
+| `get_available_updates` | Check for available updates across Core, OS, Supervisor, and all apps |
+| `get_addon_changelog` | View an app's changelog before updating |
+| `update_component` | Start an update for Core, OS, Supervisor, or an app |
+| `get_update_progress` | Monitor an in-progress update by job ID |
+| `get_running_jobs` | List all active Supervisor jobs |
+
+### ESPHome Integration
+
+| Tool | Description |
+|------|-------------|
+| `esphome_list_devices` | List all ESPHome devices with their status |
+| `esphome_compile` | Compile an ESPHome device configuration |
+| `esphome_upload` | Upload compiled firmware to an ESPHome device |
+
+### Firmware Updates
+
+| Tool | Description |
+|------|-------------|
+| `watch_firmware_update` | Monitor or start firmware updates (ESPHome, WLED, Zigbee) with real-time progress |
+
+### hab CLI Gateway
+
+| Tool | Description |
+|------|-------------|
+| `hab_run` | Run any [hab](https://github.com/balloob/home-assistant-build-cli) CLI command as a native MCP tool. Covers dashboard CRUD, area/floor/zone management, helpers, backups, blueprints, automation CRUD via API, and more. Pass the command without the `hab` prefix (e.g., `area list`, `dashboard list`). |
 
 ---
 
@@ -300,6 +467,52 @@ Analyzes your setup and suggests:
 
 ---
 
+## Safe Config Writing
+
+The `write_config_safe` MCP tool provides a complete validation pipeline when writing Home Assistant YAML configuration files. Instead of blind file writes, every change goes through multiple safety checks — including content protection against accidental data loss — with automatic rollback on failure.
+
+### Validation Pipeline
+
+When you (or the AI agent) write configuration through `write_config_safe`, the following steps happen automatically:
+
+1. **Path security** — Resolves the target path and blocks writes outside the config directory (no traversal attacks, no writes to `.storage/`, `deps/`, `tts/`, etc.)
+2. **Deprecation scan** — Checks the YAML content against known deprecation patterns sourced from:
+   - A bundled pattern library (20+ patterns covering entity namespaces, MQTT changes, YAML config removal, etc.)
+   - Remote pattern updates fetched from GitHub (cached for 1 hour)
+   - Your instance's live **Repairs** issues (via the HA WebSocket API)
+   - The public **HA Alerts** feed (integration-level advisories with version ranges)
+3. **Structural validation** — Verifies that automations have `trigger` + `action`, scripts have `sequence`, template sensors have `state`, and other structural requirements are met
+4. **Jinja2 template validation** — Extracts all `{{ }}` and `{% %}` blocks and validates them against HA's template rendering engine. Templates containing runtime-only variables (`trigger.*`, `this.*`, `context.*`, etc.) are skipped since they can't be validated outside their execution context
+5. **Content protection** — Compares the new content against the existing file to prevent accidental data loss:
+   - **List-entry reduction** — For `automations.yaml`, `scripts.yaml`, and `scenes.yaml`, blocks writes that would reduce the number of top-level list entries
+   - **Top-level key preservation** — For mapping-based files like `configuration.yaml`, blocks writes that would remove existing top-level keys
+   - **Significant size reduction** — For all files, blocks writes that would reduce the file by more than 50% by line count
+   - All three checks can be bypassed with `confirm_deletions: true` for intentional removals
+6. **File write with backup** — Creates a `.bak` copy of the existing file before writing the new content. The backup is retained even after a successful write as a recovery point
+7. **HA Core config check** — Calls Home Assistant's configuration validation API to catch errors that static analysis can't
+8. **Auto-restore on failure** — If the config check fails, the backup is automatically restored and the error is reported
+
+### Dry Run Mode
+
+Pass `dry_run: true` to run the full validation pipeline without actually writing the file. This is useful for checking whether proposed changes would pass validation before committing to them.
+
+```
+Check if this automation YAML is valid without saving it
+```
+
+### What Gets Reported
+
+The tool returns a structured result with:
+
+- **`success`** — Whether the write (or dry run) passed all checks
+- **`deprecations`** — Any deprecated patterns found, with descriptions and suggested replacements
+- **`structuralIssues`** — Missing required keys or structural problems
+- **`templateErrors`** — Jinja2 template syntax or rendering errors
+- **`configCheckResult`** — Output from HA Core's config validation
+- **`backupPath`** — Path to the backup file (if a write occurred)
+
+---
+
 ## Example Usage
 
 ### Basic Queries
@@ -392,7 +605,7 @@ LSP (Language Server Protocol) is a standard that enables smart editor features 
 - Go-to-definition
 - Error diagnostics
 
-The HA OpenCode LSP server connects to your Home Assistant instance and provides context-aware assistance while you edit YAML files.
+The OpenCode LSP server connects to your Home Assistant instance and provides context-aware assistance while you edit YAML files.
 
 ### LSP Features
 
@@ -504,6 +717,20 @@ automation: !include missing_file.yaml
 #                    ~~~~~~~~~~~~~~~~~
 #                    ❌ Include file not found: missing_file.yaml
 ```
+
+**Deprecation Warning:**
+```yaml
+automation:
+  - trigger:
+      - platform: state
+        entity_id: binary_sensor.front_door
+    action:
+      - service: notify.mobile_app
+        #~~~~~~~~
+        # ⚠ Deprecated: "service" is deprecated, use "action" instead (since 2024.x)
+```
+
+Deprecation patterns are loaded from a bundled pattern library and refreshed from GitHub in the background. Warnings appear as yellow squigglies in the editor as you type.
 
 #### Go-to-Definition
 
@@ -634,6 +861,18 @@ Check if my configuration is valid
 
 With MCP enabled, OpenCode calls the validation API directly and reports any errors.
 
+For a more thorough check, ask OpenCode to use the safe config writer which runs the full validation pipeline (deprecation scan, structural checks, template validation, and HA Core config check):
+
+```
+Write this automation to automations.yaml using safe config writing
+```
+
+```
+Dry-run validate my configuration.yaml without saving
+```
+
+See [Safe Config Writing](#safe-config-writing) for full details on the validation pipeline.
+
 ### Viewing Logs
 
 If something isn't working, check the logs:
@@ -684,7 +923,7 @@ Your OpenCode sessions and API credentials are stored in `/data/` within the app
 - This app can view system logs (Core, Supervisor, Host)
 - When MCP is enabled, OpenCode can query entities and call services
 - Access is protected by Home Assistant authentication via ingress
-- Only users with access to the HA OpenCode panel can use this app
+- Only users with access to the OpenCode panel can use this app
 
 ## Troubleshooting
 
@@ -729,7 +968,7 @@ After modifying configuration files, you may need to:
 
 - [OpenCode Documentation](https://opencode.ai/docs)
 - [OpenCode Discord](https://opencode.ai/discord)
-- [GitHub Issues](https://github.com/magnusoverli/ha_opencode/issues)
+- [GitHub Issues](https://github.com/magnusoverli/opencode/issues)
 
 ## License
 

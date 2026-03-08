@@ -41,14 +41,14 @@ You MUST follow these rules strictly:
 
 ## Environment Context
 
-- You are running inside the HA OpenCode app
+- You are running inside the OpenCode app
 - The current directory (`/homeassistant`) contains the live Home Assistant configuration
 - Changes to YAML files here directly affect the Home Assistant instance
 - You may have access to MCP tools for interacting with Home Assistant (check with the user)
 
 ## Home Assistant Interaction Model
 
-There are two primary, safe ways to interact with Home Assistant:
+There are three primary, safe ways to interact with Home Assistant:
 
 ### 1. Configuration Files (YAML)
 The standard way to define and customize Home Assistant behavior:
@@ -66,10 +66,34 @@ Real-time interaction with the running Home Assistant instance:
 - Validate configurations
 - Diagnose issues and detect anomalies
 
-**Use configuration files when:** defining behavior, creating automations, setting up integrations
-**Use MCP tools when:** checking current state, controlling devices, troubleshooting, validating changes
+### 3. hab CLI (Home Assistant Builder)
+A CLI tool designed for AI agents to manage Home Assistant. Run `hab` commands via the terminal:
+- **Entity management**: `hab entity list`, `hab entity get light.living_room`
+- **Service calls**: `hab action call light.turn_on --entity light.living_room --data '{"brightness": 200}'`
+- **Automation CRUD**: `hab automation list`, `hab automation create`, `hab automation delete`
+- **Dashboard management**: `hab dashboard list`, `hab dashboard view create`
+- **Area/floor/zone/label**: `hab area list`, `hab area create "Kitchen"`
+- **Helpers**: `hab helper list`, `hab helper create`
+- **Scripts**: `hab script list`, `hab script create`
+- **Blueprints**: `hab blueprint list`
+- **Backups**: `hab backup list`, `hab backup create`
+- **System**: `hab system info`, `hab system health`
+- **Devices**: `hab device list`
+- **Search**: `hab search related`
 
-### 3. Internal Directories (OFF-LIMITS)
+`hab` outputs JSON by default (ideal for parsing). Use `--text` for human-readable output.
+`hab` is pre-authenticated via the Supervisor token - no login required.
+Run `hab --help` or `hab <command> --help` for full usage details.
+
+<!-- HAB_LIVE_HELP_START -->
+*(Live hab command reference will be injected here at container startup)*
+<!-- HAB_LIVE_HELP_END -->
+
+**Use configuration files when:** defining behavior, creating automations, setting up integrations
+**Use MCP tools when:** checking current state, safe config writing, anomaly detection, entity diagnostics
+**Use hab CLI when:** managing dashboards, areas, helpers, backups, blueprints, and bulk admin operations
+
+### 4. Internal Directories (OFF-LIMITS)
 Home Assistant manages internal state in directories like `.storage/`. These are:
 - Not designed for direct access
 - Subject to change without notice
@@ -454,6 +478,7 @@ Query and interact with the running Home Assistant instance:
 - `call_service` - Control devices (with confirmation)
 - `get_history`, `get_logbook` - Historical data
 - `get_devices`, `get_areas` - Device and area registry info
+- `write_config_safe` - **Safe config writing with automatic validation, content protection, and backup**
 - `validate_config` - Check configuration validity
 - `get_error_log` - System errors and warnings
 - `diagnose_entity` - Comprehensive entity troubleshooting
@@ -462,19 +487,24 @@ Query and interact with the running Home Assistant instance:
 
 ### Choosing the Right Approach
 
-| Task | Configuration Files | MCP Tools |
-|------|---------------------|-----------|
-| Create/edit automations | Primary | Validate with `validate_config` |
-| Understand automation logic | Read YAML | Check state with `get_states` |
-| Check current device state | Reference only | Primary |
-| Control devices | N/A | `call_service` |
-| Add new integrations | Primary | N/A |
-| Troubleshoot issues | Review configs | `diagnose_entity`, `get_error_log` |
-| Find entities | Grep YAML files | `search_entities` |
-| View history | N/A | `get_history` |
-| **Update firmware** | N/A | **`watch_firmware_update`** |
-| **Check for updates** | N/A | `get_available_updates` |
-| **Update HA Core/OS** | N/A | `update_component` |
+| Task | Configuration Files | MCP Tools | hab CLI |
+|------|---------------------|-----------|---------|
+| Create/edit automations | Primary | **Write with `write_config_safe`** | `hab automation create` |
+| Understand automation logic | Read YAML | Check state with `get_states` | `hab automation get` |
+| Check current device state | Reference only | Primary | `hab entity get` |
+| Control devices | N/A | `call_service` | `hab action call` |
+| Add new integrations | Primary | N/A | N/A |
+| Troubleshoot issues | Review configs | `diagnose_entity`, `get_error_log` | `hab system health` |
+| Find entities | Grep YAML files | `search_entities` | `hab entity list --domain` |
+| View history | N/A | `get_history` | N/A |
+| **Manage dashboards** | Edit YAML | N/A | **`hab dashboard` (primary)** |
+| **Manage areas/floors** | N/A | `get_areas` (read-only) | **`hab area/floor` (CRUD)** |
+| **Manage helpers** | N/A | N/A | **`hab helper` (primary)** |
+| **Backups** | N/A | N/A | **`hab backup` (primary)** |
+| **Blueprints** | N/A | N/A | **`hab blueprint` (primary)** |
+| **Update firmware** | N/A | **`watch_firmware_update`** | N/A |
+| **Check for updates** | N/A | `get_available_updates` | N/A |
+| **Update HA Core/OS** | N/A | `update_component` | N/A |
 
 ### Update Management (IMPORTANT)
 
@@ -505,7 +535,7 @@ Home Assistant releases monthly updates with new features, deprecations, and bre
 1. **Check the installed version**: Use `get_config` to see what HA version is running
 2. **Fetch current integration docs**: Use `get_integration_docs` to get current YAML syntax
 3. **Check for breaking changes**: Use `get_breaking_changes` to see recent syntax changes
-4. **Validate your suggestion**: Use `check_config_syntax` to verify before presenting to user
+4. **Write config safely**: Use `write_config_safe` with `dry_run=true` to validate before presenting to user
 
 ### Documentation Tools (MCP)
 
@@ -513,18 +543,22 @@ Home Assistant releases monthly updates with new features, deprecations, and bre
 |------|-------------|
 | `get_integration_docs` | Before writing ANY integration configuration |
 | `get_breaking_changes` | When user reports config stopped working after update |
-| `check_config_syntax` | Before presenting YAML suggestions to user |
+| `write_config_safe` | **ALWAYS use to write config files** — validates, blocks accidental content loss, and auto-restores on failure |
+| `check_config_syntax` | Quick ad-hoc deprecation check (write_config_safe includes this automatically) |
 
 ### Workflow Example
 
 When a user asks "Help me set up a template sensor":
 
 ```
-1. get_config()                              -> Check HA version (e.g., 2024.12.1)
-2. get_integration_docs("template")          -> Get current syntax and examples
-3. Draft configuration using CURRENT syntax from docs
-4. check_config_syntax(yaml, "template")     -> Verify it's valid
-5. Present to user with confidence
+1. get_config()                                          -> Check HA version (e.g., 2024.12.1)
+2. get_integration_docs("template")                      -> Get current syntax and examples
+3. read_file(path)                                       -> Read the EXISTING file content first
+4. Draft configuration: include ALL existing content + new changes
+5. write_config_safe(path, yaml, dry_run=true)           -> Pre-validate everything
+6. If errors: fix and repeat step 5
+7. Present validated config to user and get approval
+8. write_config_safe(path, yaml)                         -> Write for real (auto backup + validation)
 ```
 
 ### Common Deprecation Patterns
@@ -534,18 +568,24 @@ Be especially careful with these frequently-changed areas:
 - **Entity configurations**: Many moved from YAML to UI-based config
 - **Trigger-based templates**: Newer syntax preferred over legacy template sensors
 - **Device triggers**: Syntax evolves with new device types
+- **MQTT platform syntax**: `platform: mqtt` under domain keys is deprecated; use top-level `mqtt:` key
+- **Direct state access**: `states.sensor.x.state` is fragile; use `states('sensor.x')` helper
+- **entity_id in data**: Deprecated; use `target:` for service call targeting
 
 **When in doubt, fetch the docs. Never rely solely on training data for configuration syntax.**
 
 ## Common Tasks
 
 ### Creating an Automation
-1. Understand the goal and identify trigger conditions
-2. Determine required entities (search if MCP available)
-3. Draft the automation YAML with clear comments
-4. **Show the draft to the user and wait for approval**
-5. Only write the file after explicit user confirmation
-6. Suggest testing approach
+1. **Read the existing `automations.yaml` first** — you must include ALL existing automations in the final write
+2. Understand the goal and identify trigger conditions
+3. Determine required entities (search if MCP available)
+4. Draft the automation YAML with clear comments
+5. **Show the draft to the user and wait for approval** — the draft must contain all existing automations plus the new one
+6. Only write the file after explicit user confirmation
+7. Suggest testing approach
+
+> **WARNING:** Never write partial content to ANY config file. Always read the existing file first and include ALL existing content in your write. `write_config_safe` will block writes that would reduce list entries, remove top-level keys, or significantly shrink the file — but you should verify this yourself before presenting the draft to the user.
 
 ### Troubleshooting
 1. Check entity states and history (via MCP if available)

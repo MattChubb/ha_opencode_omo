@@ -8,11 +8,17 @@ export HOME="/data"
 export XDG_DATA_HOME="/data/.local/share"
 export XDG_CONFIG_HOME="/data/.config"
 
+# Load user-defined environment variables (written by init-opencode)
+if [ -f /data/.env_vars ]; then
+    source /data/.env_vars
+fi
+
 # Ensure SUPERVISOR_TOKEN is available for MCP server
 # This is auto-injected by Home Assistant Supervisor
 if [ -z "$SUPERVISOR_TOKEN" ]; then
     echo "Warning: SUPERVISOR_TOKEN not set. MCP integration may not work."
 fi
+
 
 # Ensure directories exist
 mkdir -p "${HOME}/.local/share/opencode"
@@ -42,7 +48,11 @@ if [ "${CPU_MODE}" = "baseline" ]; then
             export OPENCODE_BIN_PATH="/usr/local/lib/node_modules/opencode-linux-x64-baseline/bin/opencode"
             ;;
         aarch64|arm64)
-            export OPENCODE_BIN_PATH="/usr/local/lib/node_modules/opencode-linux-arm64-baseline/bin/opencode"
+            if [ -x "/usr/local/lib/node_modules/opencode-linux-arm64-baseline/bin/opencode" ]; then
+                export OPENCODE_BIN_PATH="/usr/local/lib/node_modules/opencode-linux-arm64-baseline/bin/opencode"
+            else
+                export OPENCODE_BIN_PATH="/usr/local/lib/node_modules/opencode-ai/bin/opencode"
+            fi
             ;;
     esac
 fi
@@ -63,7 +73,7 @@ fi
 show_banner() {
     clear
     echo ""
-    echo -e "${BLUE}${BOLD}HA OpenCode${NC} ${GRAY}v${ADDON_VERSION}${NC}${CPU_INFO}"
+    echo -e "${BLUE}${BOLD}OpenCode${NC} ${GRAY}v${ADDON_VERSION}${NC}${CPU_INFO}"
     echo -e "${GRAY}AI-powered coding agent for Home Assistant${NC}"
     echo ""
     echo -e "${GRAY}────────────────────────────────────────────────────────────${NC}"
@@ -99,6 +109,7 @@ show_shell_help() {
     echo -e "  ${GREEN}omo-wizard${NC}        Run Oh-My-OpenCode setup wizard"
     echo -e "  ${GREEN}ha-logs${NC} ${GRAY}<type>${NC}    View logs (core, error, supervisor, host)"
     echo -e "  ${GREEN}ha-mcp${NC} ${GRAY}<cmd>${NC}     MCP integration (enable, disable, status)"
+    echo -e "  ${GREEN}hab${NC} ${GRAY}<cmd>${NC}         HA admin CLI (entities, areas, dashboards, backups)"
     echo ""
 }
 

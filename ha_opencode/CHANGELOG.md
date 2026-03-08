@@ -1,6 +1,204 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## 1.6.2
+
+**write_config_safe: Generalized content protection for all config files**
+
+Addresses [#14](https://github.com/magnusoverli/opencode/issues/14) — after the earlier fix protected list-based files (automations.yaml, scripts.yaml, scenes.yaml), a user reported that `configuration.yaml` was overwritten when the AI wrote only a to-do list integration without reading the existing file. The entry-count guard only covered list files; mapping-based files like `configuration.yaml` had no protection.
+
+### Content Protection (3 layers)
+
+- **Top-level key preservation** — for mapping-based YAML files (e.g. `configuration.yaml`), `write_config_safe` now parses existing top-level keys and blocks any write that would remove them. If `configuration.yaml` has `homeassistant:`, `automation:`, `sensor:`, etc., a write containing only `todo:` is blocked with a clear error message instructing the AI to read the file first
+- **Significant size reduction guard** — for ALL config files, writes that would reduce the file by more than 50% (by line count) are blocked. This is a generic safety net that catches destructive writes regardless of file structure
+- **List-entry reduction** (existing) — the previous protection for `automations.yaml`, `scripts.yaml`, and `scenes.yaml` remains in place, now integrated into the unified content protection system
+
+All three checks can be bypassed with `confirm_deletions: true` for intentional removals.
+
+### Backup Retention
+
+- `.bak` files are no longer deleted after a successful write. The backup always contains the file content from right before the last write, providing a recovery point even when a destructive write passes HA validation
+
+### Agent Instructions
+
+- All workflow examples in AGENTS.md and INSTRUCTIONS.md now include an explicit `read_file()` step before writing
+- Warnings broadened from automation-specific to all config files
+- Tool description updated to mention content protection
+
+## 1.6.1
+
+**ESPHome Connectivity Fix + hab CLI Shell Support**
+
+ESPHome 2026.2+ moved its dashboard to a Unix socket behind nginx with IP-based access rules, breaking direct connections from addon containers. This release routes all ESPHome communication through HA Core's ingress proxy, restoring full functionality for both MCP tools and the hab CLI.
+
+### ESPHome Ingress Integration
+- **All ESPHome MCP tools working again** — `esphome_list_devices`, `esphome_compile`, and `esphome_upload` now route through HA Core's ingress proxy instead of connecting directly to the ESPHome container
+- **hab CLI ESPHome commands working from shell** — `hab esphome list`, `hab esphome logs`, etc. now work when run directly from the terminal, not just through the MCP `hab_run` tool
+- **New `access_token` configuration option** — a long-lived HA Core access token is required for ESPHome ingress authentication. Create one at Profile → Long-Lived Access Tokens in the HA UI and paste it into the addon's Configuration tab. Only needed if you use ESPHome tools
+- **Automatic HA Core URL discovery** — the addon auto-discovers your HA instance URL from `internal_url` in Settings → System → Network, with automatic fallback to network interface detection if the URL is set to "automatic"
+- **WebSocket ingress session creation** — ingress sessions are created via HA Core's WebSocket API (the only method accepted by the Supervisor), using the long-lived access token for authentication
+
+### Startup ESPHome Discovery
+- New `discover-esphome.js` startup script runs the same 5-step discovery flow as the MCP server (find addon → get ingress entry → resolve HA Core URL → create WebSocket session → build URL) and writes `HAB_ESPHOME_URL` and `HAB_ESPHOME_SESSION` to the environment so `hab esphome` commands work from the shell
+- Discovery is best-effort at addon startup — if ESPHome is not installed, not running, or the access token is missing, it skips silently
+
+### Other Changes
+- **Bumped `hassio_role` to `manager`** — required for ingress session creation via the Supervisor API
+- **Safer automation editing in AGENTS.md** — AI instructions now require reading all existing automations before writing to `automations.yaml`, preventing accidental overwrites
+- **Beta channel infrastructure** — added `ha_opencode_beta` addon directory and CI workflows for beta releases, enabling faster testing of experimental changes
+
+## 1.6.0
+
+**hab CLI from Source + Debian Trixie Base Image**
+
+- **Upgraded base image to Debian Trixie** — migrated from `bookworm` (Debian 12) to `trixie` (Debian 13), bringing Node.js 18 → 20, git 2.39 → 2.47, glibc 2.36 → 2.41, and newer versions of jq, curl, and tmux
+- **hab CLI built from source** — hab is now compiled from the [main branch](https://github.com/balloob/home-assistant-build-cli) at each add-on release via a multi-stage Docker build, replacing the previous pinned release binary. This ensures the latest features and fixes are always included without waiting for upstream releases
+- **Removed daily/weekly release-tracking workflows** — the automated version-bump PRs (`update-hab-cli.yaml`, `check-hab-update.yaml`) have been replaced with a lightweight weekly status check that reports the latest commit on main
+
+## 1.5.3
+
+**hab CLI: Automated Update Tracking + Live Command Discovery**
+
+- **Automated hab update detection** — new weekly GitHub Actions workflow checks for new [hab CLI](https://github.com/balloob/home-assistant-build-cli) releases every Monday and opens a pull request automatically, keeping the version pins in `build.yaml` and `Dockerfile` in sync. Can also be triggered manually from the Actions tab.
+- **Dynamic hab help injection** — at container startup, `hab --help` output is injected live into `AGENTS.md` between sentinel markers, so the AI always sees the exact commands available in the installed hab version — no manual documentation update needed when hab gains new features
+- **Note for users who saw missing icons after the 1.5.2 repo rename**: a standard update is not sufficient to restore them — uninstall and reinstall the add-on once to refresh the Supervisor icon cache
+
+## 1.5.2
+
+**Rename: GitHub repository `ha_opencode` -> `opencode`**
+
+- Renamed GitHub repository from `magnusoverli/ha_opencode` to `magnusoverli/opencode`
+- All old URLs auto-redirect via GitHub — no action needed for existing users
+- Updated all repository URL references across config, docs, CI, and README
+- Reverted the directory rename from v1.5.1 — add-on directory must match slug for icon/logo discovery
+
+## 1.5.1
+
+**Fix: Restore add-on logo in Home Assistant update notifications**
+
+- Reverted directory rename (`opencode/` back to `ha_opencode/`) — HA Supervisor requires the directory name to match the add-on slug for icon/logo discovery
+
+## 1.5.0
+
+**Renamed to OpenCode + hab CLI Integration**
+
+Based on feedback from [@balloob](https://github.com/balloob):
+
+- **Renamed from "HA OpenCode" to "OpenCode"** across all user-facing surfaces (sidebar panel, add-on store, logs, banner, docs, build labels)
+- **MCP enabled by default** — the Home Assistant MCP integration is now on out of the box, no manual toggle needed
+- **Integrated [hab CLI](https://github.com/balloob/home-assistant-build-cli)** (Home Assistant Builder v1.4.0) — a CLI by balloob designed for AI agents to manage HA via REST and WebSocket APIs
+  - Installed as a pre-authenticated binary (amd64 + aarch64)
+  - Exposed as a native MCP tool (`hab_run`) so the AI discovers it alongside existing tools — no bash guesswork needed
+  - Covers dashboard CRUD, area/floor/zone/label management, helper creation, automation management via API, script management, backup/restore, blueprints, calendar, device management, groups, and search
+  - Security: uses `execFile` (no shell injection), blocks auth/self-update commands
+- **AGENTS.md auto-update** — on add-on update, AGENTS.md is refreshed with the latest AI instructions unless the user has customized it
+- Available in the shell help after exiting OpenCode (`hab <cmd>`)
+- MCP tool count: 32 → 33
+
+## 1.4.4
+
+**Fix: write_config_safe now blocks writes when HA config check is unavailable**
+
+- `write_config_safe` previously treated a failed HA config check API call as a success,
+  leaving unvalidated config on disk. The tool now restores the original file (or removes
+  the newly written file) whenever the validation result is anything other than an explicit
+  `"valid"` from HA Core — including when the check API is unreachable or returns an error.
+- Removed overreaching "will never fail to start" guarantees from documentation and agent
+  instructions. Claims now accurately reference the multi-layered guardrails (deprecation
+  scanning, Jinja2 pre-validation, structural checks, backup/restore, HA Core config check)
+  rather than making absolute promises.
+- Expanded DOCS.md to cover `env_vars`, `cpu_mode`, and `opencode_config` configuration options.
+
+## 1.4.2
+
+**Feature: User-Defined Environment Variables**
+
+- Added `env_vars` configuration option to pass custom environment variables into the container
+  - Supports any key/value pair (e.g. `AZURE_RESOURCE_NAME`, `OPENAI_API_KEY`)
+  - Variables are available to OpenCode, the terminal shell, and all child processes
+  - Configurable from the add-on's Configuration tab in Home Assistant
+- Security hardening:
+  - Variable names validated against strict shell identifier regex
+  - Critical system variables (`HOME`, `PATH`, `SUPERVISOR_TOKEN`, etc.) are blocked from being overridden
+  - Values are single-quote escaped to prevent shell injection
+  - File permissions set to 600 and excluded from backups to protect secrets
+- Removed unused legacy `run.sh` entry point (dead code cleanup)
+
+Closes #12
+
+## 1.4.1
+
+**CI: Prevent redundant builds and fix release notes extraction**
+
+- Added `[skip ci]` to the automated version bump commit in the release workflow, preventing unnecessary CI runs when the release bot pushes to `main`
+- Fixed changelog extraction in release workflow — the `awk` range pattern was matching the section header as both start and end, producing empty release notes
+
+## 1.4.0
+
+**Safe Config Writing & Multi-Layered Validation Pipeline**
+
+This release adds a comprehensive config validation system with multiple layers of protection against AI-written configuration causing your Home Assistant to fail to start. Inspired by community feedback on making AI coding agents safe for production HA instances.
+
+### New MCP Tool: `write_config_safe`
+- Writes YAML config files with automatic validation and backup/restore
+- If validation fails after writing, the original file is automatically restored
+- Supports `dry_run` mode to pre-validate config without touching disk
+- Validates through multiple layers before committing:
+  - Deprecation pattern scanning (20+ patterns)
+  - Jinja2 template pre-validation through HA's own template engine
+  - Structural YAML checks (automations need triggers/actions, scripts need sequences, etc.)
+  - YAML lint checks (tabs, comma-separated entity lists, multiline issues)
+  - Full HA Core config check (`POST /config/core/check_config`)
+- Path traversal protection — blocks writes to internal directories (`.storage`, `.cloud`, etc.)
+
+### Dynamic Validation Data Sources
+- **GitHub remote patterns** — deprecation patterns are fetched from the repo hourly, allowing updates between add-on releases
+- **HA Repairs API** — queries your installation's active repair/deprecation warnings via WebSocket (`repairs/list_issues`)
+- **HA Alerts feed** — checks `alerts.home-assistant.io` for known integration issues affecting your config
+- All remote sources have timeouts, caching (1 hour TTL), and graceful fallback to bundled data
+
+### LSP Real-Time Deprecation Warnings
+- The LSP server now surfaces deprecated syntax as yellow squigglies while editing YAML files
+- Shares the same pattern database as the MCP server for consistency
+- Also fetches updated patterns from GitHub in the background
+
+### Shared Deprecation Pattern Database
+- Extracted deprecation patterns from MCP server into a shared JSON file (`rootfs/opt/shared/deprecation-patterns.json`)
+- Both MCP and LSP servers load from the same source
+- Expanded from 10 to 20 patterns, adding coverage for:
+  - Legacy MQTT platform syntax (`platform: mqtt` under domain keys)
+  - Direct state object access (`states.sensor.x.state` — use `states('sensor.x')`)
+  - Direct attribute access (`states.sensor.x.attributes` — use `state_attr()`)
+  - `entity_id` inside `data:` (should use `target:`)
+  - `hassio` service domain (renamed to `homeassistant`)
+  - String format `for:` durations (should use dict format)
+  - Legacy `value_template` key (modern template sensors use `state:`)
+
+### Updated Agent Instructions
+- `INSTRUCTIONS.md` updated with mandatory `write_config_safe` workflow
+- `AGENTS.md` updated with new tool references and deprecation guidance
+- MCP server version bumped to v2.6.0 (Safe Config Edition), tool count 31 → 32
+
+## 1.3.7
+
+**Housekeeping: Licensing, CI, and Documentation**
+
+- Added missing `ws`, `prettier`, and Home Assistant base image entries to `THIRD-PARTY-LICENSES.md`, including the Apache-2.0 license text for the HA base image
+- Contributor mentions in the changelog are now linked directly to GitHub profiles
+- Split CI build workflow into separate per-architecture jobs (`build-aarch64.yaml`, `build-amd64.yaml`) to enable independent build status badges in the README
+- CI workflow runs now include the version number in their name for easier identification in the Actions tab
+
+## 1.3.6
+
+**Bug Fix: ARM64 Initialization Failure + Documentation Overhaul**
+
+- Fixed OpenCode failing to start on ARM64 devices (e.g. Home Assistant Green) — ARM64 was incorrectly routed into `baseline` mode even though no ARM64 baseline package exists, leaving the session with a non-existent binary path. ARM64 now correctly uses the regular OpenCode binary (reported by [@timsteinberg](https://github.com/timsteinberg) and [@wizzyto12](https://github.com/wizzyto12), fixed by [@Teeflo](https://github.com/Teeflo))
+- Fixed potential infinite exec loop in the OpenCode wrapper when `/usr/local/bin/opencode` was already a symlink from a previous run (fixed by [@Teeflo](https://github.com/Teeflo))
+- Added safe fallback in `opencode-session.sh` for the edge case where ARM64 baseline mode is manually forced via config (fixed by [@Teeflo](https://github.com/Teeflo))
+- Revamped README with improved structure, clearer installation steps, and updated badges (contributed by [@Teeflo](https://github.com/Teeflo))
+- Corrected MCP tool count (22 → 31), resource count (9 → 13), and added go-to-definition to the LSP feature description to reflect the actual implementation
+- Updated icon and logo assets (contributed by [@Teeflo](https://github.com/Teeflo))
+
 ## 1.3.5
 
 **Bug Fix: ARM64 Baseline Binary Initialization (fixes [#7](https://github.com/magnusoverli/ha_opencode/issues/7))**
@@ -9,7 +207,7 @@ All notable changes to this project will be documented in this file.
   - `OPENCODE_BIN_PATH` in `opencode-session.sh` was hardcoded to the x64 baseline path — now correctly resolves based on architecture
 - Added proper ARM64 detection in CPU capability check, skipping the irrelevant x86 AVX flag inspection
 - Fixed potential infinite exec loop in the OpenCode wrapper fallback path
-- Thanks to @timsteinberg and @Teeflo for reporting!
+- Thanks to [@timsteinberg](https://github.com/timsteinberg) and [@Teeflo](https://github.com/Teeflo) for reporting!
 
 ## 1.3.4
 

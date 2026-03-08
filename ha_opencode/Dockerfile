@@ -1,4 +1,19 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:bookworm
+# Global ARGs (available in FROM instructions)
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base-debian:trixie
+ARG BUILD_ARCH
+
+## Stage 1: Build hab CLI from source (main branch)
+FROM golang:1.24-trixie AS hab-builder
+
+ARG BUILD_ARCH
+RUN git clone --depth 1 https://github.com/balloob/home-assistant-build-cli.git /src
+WORKDIR /src
+
+# Cross-compile for the target architecture
+RUN GOARCH=$([ "$BUILD_ARCH" = "aarch64" ] && echo "arm64" || echo "amd64") \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /hab .
+
+## Stage 2: Main add-on image
 FROM $BUILD_FROM
 
 # Build arguments
@@ -22,12 +37,14 @@ ENV NODE_ENV=production \
 # - procps: Provides pgrep for health check
 # - tmux: Session persistence to prevent multiple OpenCode instances
 # - unzip: Required for bun installation
+# - nginx: Reverse proxy for web UI mode (rewrites paths for HA ingress)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
         git \
         jq \
+        nginx \
         nodejs \
         npm \
         procps \
@@ -48,6 +65,10 @@ RUN ARCH=$([ "$BUILD_ARCH" = "aarch64" ] && echo "aarch64" || echo "x86_64") \
     && rm -rf /tmp/bun.zip /usr/local/bun-linux-${ARCH}
 
 # Install OpenCode, Prettier, and oh-my-opencode globally
+# Copy hab CLI binary built from source (main branch)
+# A CLI designed for AI agents to manage HA via REST/WebSocket APIs
+COPY --from=hab-builder /hab /usr/local/bin/hab
+
 # - OpenCode: AI coding agent (pin version in build.yaml for reproducible builds)
 # - Prettier: Code formatter for YAML files, configured for HA conventions
 # - oh-my-opencode: Enhanced agent harness with multi-model orchestration
@@ -71,18 +92,19 @@ COPY rootfs /
 RUN chmod +x /usr/local/bin/* \
     && chmod +x /etc/s6-overlay/s6-rc.d/init-opencode/run \
     && chmod +x /etc/s6-overlay/s6-rc.d/ha-opencode/run \
+    && chmod +x /etc/profile.d/hab-esphome.sh \
     && mkdir -p /data/.local/share/opencode /data/.config/opencode
 
 # Set working directory to HA config (mounted at runtime)
 WORKDIR /homeassistant
 
-# Health check - verify ttyd is running
+# Health check - verify the UI process is running (ttyd in TUI mode, nginx in web mode)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD pgrep ttyd > /dev/null || exit 1
+    CMD pgrep ttyd > /dev/null || pgrep nginx > /dev/null || exit 1
 
 # Labels for Home Assistant
 LABEL \
-    io.hass.name="HA OpenCode" \
+    io.hass.name="OpenCode" \
     io.hass.description="AI coding agent for editing Home Assistant configuration" \
     io.hass.type="addon" \
     io.hass.version="${BUILD_VERSION}"
