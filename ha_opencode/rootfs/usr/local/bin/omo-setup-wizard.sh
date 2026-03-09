@@ -59,10 +59,11 @@ if [ -f "${MARKER_FILE}" ]; then
 fi
 
 # Function to ask yes/no question
+# Sets ASK_RESULT global variable to avoid subshell stdin issues
+ASK_RESULT=""
 ask_yes_no() {
     local prompt="$1"
     local default="${2:-n}"
-    local result=""
     
     if [ "$default" = "y" ]; then
         prompt="${prompt} [Y/n]: "
@@ -74,19 +75,17 @@ ask_yes_no() {
         read -p "$prompt" -n 1 -r
         echo ""
         if [[ -z "$REPLY" ]]; then
-            result="$default"
+            ASK_RESULT="$default"
         elif [[ $REPLY =~ ^[Yy]$ ]]; then
-            result="y"
+            ASK_RESULT="y"
         elif [[ $REPLY =~ ^[Nn]$ ]]; then
-            result="n"
+            ASK_RESULT="n"
         else
             echo -e "${RED}Please enter y or n${NC}"
             continue
         fi
         break
     done
-    
-    echo "$result"
 }
 
 # Collect subscription information
@@ -103,11 +102,11 @@ echo ""
 
 # Claude subscription
 echo -e "${BOLD}1. Do you have a Claude Pro/Max Subscription?${NC}"
-REPLY=$(ask_yes_no "   " "n")
-if [ "$REPLY" = "y" ]; then
+ask_yes_no "   " "n"
+if [ "$ASK_RESULT" = "y" ]; then
     echo -e "${GRAY}   Are you on max20 (20x mode)?${NC}"
-    MAX_REPLY=$(ask_yes_no "   " "n")
-    if [ "$MAX_REPLY" = "y" ]; then
+    ask_yes_no "   " "n"
+    if [ "$ASK_RESULT" = "y" ]; then
         CLAUDE_SETTING="max20"
     else
         CLAUDE_SETTING="yes"
@@ -117,40 +116,40 @@ echo ""
 
 # OpenAI subscription
 echo -e "${BOLD}2. Do you have an OpenAI/ChatGPT Plus Subscription?${NC}"
-REPLY=$(ask_yes_no "   (GPT-5.2 for Oracle agent)" "n")
-if [ "$REPLY" = "y" ]; then
+ask_yes_no "   (GPT-5.2 for Oracle agent)" "n"
+if [ "$ASK_RESULT" = "y" ]; then
     OPENAI_SETTING="yes"
 fi
 echo ""
 
 # Gemini subscription
 echo -e "${BOLD}3. Will you integrate Gemini models?${NC}"
-REPLY=$(ask_yes_no "   " "n")
-if [ "$REPLY" = "y" ]; then
+ask_yes_no "   " "n"
+if [ "$ASK_RESULT" = "y" ]; then
     GEMINI_SETTING="yes"
 fi
 echo ""
 
 # GitHub Copilot
 echo -e "${BOLD}4. Do you have a GitHub Copilot Subscription?${NC}"
-REPLY=$(ask_yes_no "   (Fallback provider)" "n")
-if [ "$REPLY" = "y" ]; then
+ask_yes_no "   (Fallback provider)" "n"
+if [ "$ASK_RESULT" = "y" ]; then
     COPILOT_SETTING="yes"
 fi
 echo ""
 
 # OpenCode Zen
 echo -e "${BOLD}5. Do you have access to OpenCode Zen (opencode/ models)?${NC}"
-REPLY=$(ask_yes_no "   " "n")
-if [ "$REPLY" = "y" ]; then
+ask_yes_no "   " "n"
+if [ "$ASK_RESULT" = "y" ]; then
     OPENCODE_ZEN_SETTING="yes"
 fi
 echo ""
 
 # Z.ai Coding Plan
 echo -e "${BOLD}6. Do you have a Z.ai Coding Plan subscription?${NC}"
-REPLY=$(ask_yes_no "   (GLM-4.7 for Librarian agent)" "n")
-if [ "$REPLY" = "y" ]; then
+ask_yes_no "   (GLM-4.7 for Librarian agent)" "n"
+if [ "$ASK_RESULT" = "y" ]; then
     ZAI_SETTING="yes"
 fi
 echo ""
@@ -162,8 +161,8 @@ if [ "$CLAUDE_SETTING" = "no" ] && [ "$OPENAI_SETTING" = "no" ] && \
     echo -e "${YELLOW}${BOLD}Warning: No subscriptions selected.${NC}"
     echo -e "${YELLOW}The Sisyphus agent requires Claude for optimal performance.${NC}"
     echo ""
-    REPLY=$(ask_yes_no "Continue without subscriptions?" "n")
-    if [ "$REPLY" != "y" ]; then
+    ask_yes_no "Continue without subscriptions?" "n"
+    if [ "$ASK_RESULT" != "y" ]; then
         echo -e "${GRAY}Setup cancelled.${NC}"
         exit 0
     fi
