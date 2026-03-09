@@ -58,7 +58,7 @@ RUN ARCH=$([ "$BUILD_ARCH" = "aarch64" ] && echo "aarch64" || echo "x86_64") \
     && chmod +x /usr/bin/ttyd
 
 # Install bun runtime (required for oh-my-opencode)
-RUN ARCH=$([ "$BUILD_ARCH" = "aarch64" ] && echo "aarch64" || echo "x86_64") \
+RUN ARCH=$([ "$BUILD_ARCH" = "aarch64" ] && echo "aarch64" || echo "x64") \
     && curl -fsSL "https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-linux-${ARCH}.zip" -o /tmp/bun.zip \
     && unzip /tmp/bun.zip -d /usr/local \
     && mv /usr/local/bun-linux-${ARCH}/bun /usr/local/bin/ \
