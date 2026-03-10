@@ -60,25 +60,27 @@ fi
 
 # Function to ask yes/no question
 # Sets ASK_RESULT global variable to avoid subshell stdin issues
+# Uses echo -n + read instead of read -p for ttyd/xterm.js compatibility
 ASK_RESULT=""
 ask_yes_no() {
     local prompt="$1"
     local default="${2:-n}"
     
     if [ "$default" = "y" ]; then
-        prompt="${prompt} [Y/n]: "
+        prompt="${prompt}[Y/n]: "
     else
-        prompt="${prompt} [y/N]: "
+        prompt="${prompt}[y/N]: "
     fi
     
     while true; do
-        read -p "$prompt" -n 1 -r
+        echo -e -n "$prompt"
+        read -n 1 -r answer
         echo ""
-        if [[ -z "$REPLY" ]]; then
+        if [[ -z "$answer" ]]; then
             ASK_RESULT="$default"
-        elif [[ $REPLY =~ ^[Yy]$ ]]; then
+        elif [[ $answer =~ ^[Yy]$ ]]; then
             ASK_RESULT="y"
-        elif [[ $REPLY =~ ^[Nn]$ ]]; then
+        elif [[ $answer =~ ^[Nn]$ ]]; then
             ASK_RESULT="n"
         else
             echo -e "${RED}Please enter y or n${NC}"
