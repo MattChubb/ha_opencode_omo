@@ -171,7 +171,7 @@ if [ "$CLAUDE_SETTING" = "no" ] && [ "$OPENAI_SETTING" = "no" ] && \
 fi
 
 # Build the install command
-INSTALL_CMD="bunx oh-my-opencode install --no-tui"
+INSTALL_CMD="bun x oh-my-opencode install --no-tui"
 INSTALL_CMD="${INSTALL_CMD} --claude=${CLAUDE_SETTING}"
 INSTALL_CMD="${INSTALL_CMD} --gemini=${GEMINI_SETTING}"
 INSTALL_CMD="${INSTALL_CMD} --copilot=${COPILOT_SETTING}"

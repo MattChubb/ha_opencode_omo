@@ -44,6 +44,7 @@ RUN apt-get update \
         curl \
         git \
         jq \
+        libatomic1 \
         nginx \
         nodejs \
         npm \
@@ -62,6 +63,7 @@ RUN ARCH=$([ "$BUILD_ARCH" = "aarch64" ] && echo "aarch64" || echo "x64") \
     && curl -fsSL "https://github.com/oven-sh/bun/releases/download/bun-v${BUN_VERSION}/bun-linux-${ARCH}.zip" -o /tmp/bun.zip \
     && unzip /tmp/bun.zip -d /usr/local \
     && mv /usr/local/bun-linux-${ARCH}/bun /usr/local/bin/ \
+    && ln -s /usr/local/bin/bun /usr/local/bin/bunx \
     && rm -rf /tmp/bun.zip /usr/local/bun-linux-${ARCH}
 
 # Install OpenCode, Prettier, and oh-my-opencode globally
