@@ -3,35 +3,35 @@ configuration:
   mcp_enabled:
     name: "Enable MCP Home Assistant Integration"
     description: "Enable the Model Context Protocol (MCP) server that allows OpenCode to query entities and call services directly. When enabled, you can ask OpenCode things like 'turn on the living room lights' or 'what's the temperature in the bedroom?'"
-  
+
   lsp_enabled:
     name: "Enable LSP (Language Server Protocol)"
     description: "Enable Language Server Protocol support for intelligent code assistance. Provides real-time diagnostics, auto-completion, and validation for Home Assistant YAML configuration files."
-  
+
   ui_mode:
     name: "UI Mode"
     description: "Controls how OpenCode is displayed. 'tui' uses a full terminal (ttyd + tmux) with shell access — you can run shell commands, use tab completion, and interact with OpenCode's TUI. 'web' uses OpenCode's built-in browser UI — a cleaner interface but without shell access (no terminal commands, only the OpenCode chat). Default: tui."
-  
+
   cpu_mode:
     name: "CPU Mode"
     description: "Controls which OpenCode binary is used. 'auto' detects your CPU capabilities automatically (recommended). 'baseline' forces the baseline binary for older CPUs without AVX2 support. 'regular' forces the standard binary."
-  
+
   terminal_theme:
     name: "Terminal Theme"
     description: "Color scheme for the terminal. Choose a theme that's easy on your eyes."
-  
+
   font_size:
     name: "Font Size"
     description: "Terminal font size in pixels. Larger sizes improve readability, smaller sizes show more content."
-  
+
   cursor_style:
     name: "Cursor Style"
     description: "The appearance of the terminal cursor."
-  
+
   cursor_blink:
     name: "Blinking Cursor"
     description: "Whether the terminal cursor should blink."
-  
+
   access_token:
     name: "Home Assistant Access Token"
     description: "A long-lived access token for direct communication with Home Assistant Core. Required for ESPHome integration (device listing, log streaming, builds). Create one in the HA UI under Profile → Long-Lived Access Tokens. Leave empty if you don't use ESPHome tools."
@@ -43,3 +43,19 @@ configuration:
   opencode_config:
     name: "Custom OpenCode Configuration (JSON)"
     description: "Advanced: Paste a JSON object to customize OpenCode's own configuration (providers, keybindings, etc.). This is merged with the add-on's built-in config. Leave empty for defaults. See https://opencode.ai/docs/config for the full schema."
+
+  codenomad_enabled:
+    name: "CodeNomad Enabled"
+    description: "Enable CodeNomad web-based file editor for OpenCode server mode"
+
+  codenomad_port:
+    name: "CodeNomad Port"
+    description: "Port for CodeNomad web interface (default 3000)"
+
+  codenomad_workspace:
+    name: "CodeNomad Workspace"
+    description: "Directory path for CodeNomad to serve (default /homeassistant)"
+
+  codenomad_auth_token:
+    name: "CodeNomad Auth Token"
+    description: "Optional authentication token for CodeNomad access (leave empty for no auth)"
