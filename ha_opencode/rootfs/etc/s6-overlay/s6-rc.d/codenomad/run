@@ -1,0 +1,44 @@
+#!/command/with-contenv bashio
+# ==============================================================================
+# CodeNomad - Web frontend for OpenCode server mode
+# ==============================================================================
+
+# Check if CodeNomad is enabled
+CODENOMAD_ENABLED=$(bashio::config 'codenomad_enabled' 2>/dev/null || echo "false")
+if [ "${CODENOMAD_ENABLED}" != "true" ]; then
+    bashio::log.info "CodeNomad is disabled, exiting..."
+    sleep 10
+    exit 0
+fi
+
+# Read configuration
+CODENOMAD_PORT=$(bashio::config 'codenomad_port' 2>/dev/null || echo "3000")
+CODENOMAD_WORKSPACE=$(bashio::config 'codenomad_workspace' 2>/dev/null || echo "/homeassistant")
+CODENOMAD_AUTH_TOKEN=$(bashio::config 'codenomad_auth_token' 2>/dev/null || echo "")
+
+bashio::log.info "Starting CodeNomad on port ${CODENOMAD_PORT}..."
+bashio::log.info "Workspace: ${CODENOMAD_WORKSPACE}"
+
+# Set environment
+export HOME="/data"
+export XDG_DATA_HOME="/data/.local/share"
+export XDG_CONFIG_HOME="/data/.config"
+
+# Load user-defined environment variables
+if [ -f /data/.env_vars ]; then
+    source /data/.env_vars
+fi
+
+# Change to workspace directory
+cd "${CODENOMAD_WORKSPACE}"
+
+# Build command arguments
+CODENOMAD_ARGS="--port ${CODENOMAD_PORT}"
+
+# Add auth token if configured
+if [ -n "${CODENOMAD_AUTH_TOKEN}" ]; then
+    CODENOMAD_ARGS="${CODENOMAD_ARGS} --auth-token ${CODENOMAD_AUTH_TOKEN}"
+fi
+
+# Start CodeNomad
+exec codenomad ${CODENOMAD_ARGS}
