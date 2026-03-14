@@ -74,7 +74,7 @@ COPY --from=hab-builder /hab /usr/local/bin/hab
 # - OpenCode: AI coding agent (pin version in build.yaml for reproducible builds)
 # - Prettier: Code formatter for YAML files, configured for HA conventions
 # - oh-my-opencode: Enhanced agent harness with multi-model orchestration
-RUN npm install -g opencode-ai@${OPENCODE_VERSION} prettier oh-my-opencode codenomad \
+RUN npm install -g opencode-ai@${OPENCODE_VERSION} prettier oh-my-opencode @neuralnomads/codenomad \
     && npm cache clean --force
 
 # Copy package.json files first for better layer caching
