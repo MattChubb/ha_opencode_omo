@@ -33,7 +33,7 @@ fi
 cd "${CODENOMAD_WORKSPACE}"
 
 # Build command arguments
-CODENOMAD_ARGS="--port ${CODENOMAD_PORT}"
+CODENOMAD_ARGS="--http-port ${CODENOMAD_PORT}"
 
 # Add auth token if configured
 if [ -n "${CODENOMAD_AUTH_TOKEN}" ]; then
