@@ -56,6 +56,9 @@ configuration:
     name: "CodeNomad Workspace"
     description: "Directory path for CodeNomad to serve (default /homeassistant)"
 
-  codenomad_auth_token:
-    name: "CodeNomad Auth Token"
-    description: "Optional authentication token for CodeNomad access (leave empty for no auth)"
+  codenomad_username:
+    name: "CodeNomad Username"
+    description: "Username for CodeNomad authentication (default codenomad)"
+  codenomad_password:
+    name: "CodeNomad Password"
+    description: "Password for CodeNomad authentication (default codenomad)"

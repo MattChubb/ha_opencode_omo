@@ -66,7 +66,8 @@ options:
   codenomad_enabled: false
   codenomad_port: 3000
   codenomad_workspace: "/homeassistant"
-  codenomad_auth_token: ""
+  codenomad_username: "codenomad"
+  codenomad_password: "codenomad"
 
 schema:
   # Feature toggles
@@ -100,7 +101,8 @@ schema:
   codenomad_enabled: bool
   codenomad_port: port
   codenomad_workspace: str
-  codenomad_auth_token: str?
+  codenomad_username: str?
+  codenomad_password: password?
 
 # Exclude caches from backups
 backup_exclude:

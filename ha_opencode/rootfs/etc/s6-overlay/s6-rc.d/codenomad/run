@@ -14,7 +14,8 @@ fi
 # Read configuration
 CODENOMAD_PORT=$(bashio::config 'codenomad_port' 2>/dev/null || echo "3000")
 CODENOMAD_WORKSPACE=$(bashio::config 'codenomad_workspace' 2>/dev/null || echo "/homeassistant")
-CODENOMAD_AUTH_TOKEN=$(bashio::config 'codenomad_auth_token' 2>/dev/null || echo "")
+CODENOMAD_USERNAME=$(bashio::config 'codenomad_username' 2>/dev/null || echo "")
+CODENOMAD_PASSWORD=$(bashio::config 'codenomad_password' 2>/dev/null || echo "")
 
 bashio::log.info "Starting CodeNomad on port ${CODENOMAD_PORT}..."
 bashio::log.info "Workspace: ${CODENOMAD_WORKSPACE}"
@@ -32,13 +33,12 @@ fi
 # Change to workspace directory
 cd "${CODENOMAD_WORKSPACE}"
 
-# Build command arguments
-CODENOMAD_ARGS="--http-port ${CODENOMAD_PORT}"
+# Set port
+export CLI_HTTPS_PORT="${CODENOMAD_PORT}"
 
-# Add auth token if configured
-if [ -n "${CODENOMAD_AUTH_TOKEN}" ]; then
-    CODENOMAD_ARGS="${CODENOMAD_ARGS} --auth-token ${CODENOMAD_AUTH_TOKEN}"
-fi
+# Set credentials 
+export CODENOMAD_SERVER_USERNAME="${CODENOMAD_USERNAME}"
+export CODENOMAD_SERVER_PASSWORD="${CODENOMAD_PASSWORD}"
 
 # Start CodeNomad
-exec codenomad ${CODENOMAD_ARGS}
+exec codenomad
