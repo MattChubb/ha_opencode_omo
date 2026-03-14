@@ -33,13 +33,11 @@ fi
 # Change to workspace directory
 cd "${CODENOMAD_WORKSPACE}"
 
-# Build command arguments
+# Add port
 CODENOMAD_ARGS="--http-port ${CODENOMAD_PORT}"
 
-# Add username/password auth if configured
-if [ -n "${CODENOMAD_USERNAME}" ] || [ -n "${CODENOMAD_PASSWORD}" ]; then
-    CODENOMAD_ARGS="${CODENOMAD_ARGS} --username ${CODENOMAD_USERNAME} --password ${CODENOMAD_PASSWORD}"
-fi
+# Add username/password auth
+CODENOMAD_ARGS="${CODENOMAD_ARGS} --username ${CODENOMAD_USERNAME} --password ${CODENOMAD_PASSWORD}"
 
 # Start CodeNomad
 exec codenomad ${CODENOMAD_ARGS}
