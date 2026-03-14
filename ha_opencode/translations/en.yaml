@@ -48,10 +48,6 @@ configuration:
     name: "CodeNomad Enabled"
     description: "Enable CodeNomad web-based file editor for OpenCode server mode"
 
-  codenomad_port:
-    name: "CodeNomad Port"
-    description: "Port for CodeNomad web interface (default 3000)"
-
   codenomad_workspace:
     name: "CodeNomad Workspace"
     description: "Directory path for CodeNomad to serve (default /homeassistant)"
