@@ -98,7 +98,7 @@ schema:
 
   # CodeNomad
   codenomad_enabled: bool
-  codenomad_port: port(1,65535)
+  codenomad_port: port
   codenomad_workspace: str
   codenomad_auth_token: str?
 
