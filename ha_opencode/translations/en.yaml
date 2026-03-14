@@ -58,7 +58,7 @@ configuration:
 
   codenomad_username:
     name: "CodeNomad Username"
-    description: "Optional username for CodeNomad authentication"
+    description: "Username for CodeNomad authentication (default codenomad)"
   codenomad_password:
     name: "CodeNomad Password"
-    description: "Optional password for CodeNomad authentication (leave empty with username for no auth)"
+    description: "Password for CodeNomad authentication (default codenomad)"
