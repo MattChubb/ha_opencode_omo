@@ -66,8 +66,8 @@ options:
   codenomad_enabled: false
   codenomad_port: 3000
   codenomad_workspace: "/homeassistant"
-  codenomad_username: ""
-  codenomad_password: ""
+  codenomad_username: "codenomad"
+  codenomad_password: "codenomad"
 
 schema:
   # Feature toggles
