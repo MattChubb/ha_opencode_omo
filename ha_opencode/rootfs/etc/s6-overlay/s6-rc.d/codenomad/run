@@ -33,9 +33,12 @@ fi
 # Change to workspace directory
 cd "${CODENOMAD_WORKSPACE}"
 
+# Set port
+export CLI_HTTPS_PORT="${CODENOMAD_PORT}"
+
 # Set credentials 
 export CODENOMAD_SERVER_USERNAME="${CODENOMAD_USERNAME}"
 export CODENOMAD_SERVER_PASSWORD="${CODENOMAD_PASSWORD}"
 
 # Start CodeNomad
-exec codenomad --http-port ${CODENOMAD_PORT}
+exec codenomad
