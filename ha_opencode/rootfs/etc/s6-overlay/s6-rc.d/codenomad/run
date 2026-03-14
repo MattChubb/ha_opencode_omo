@@ -34,7 +34,7 @@ fi
 cd "${CODENOMAD_WORKSPACE}"
 
 # Set network config
-export CLI_HTTPS_PORT="${CODENOMAD_PORT}"
+export CLI_HTTP_PORT="${CODENOMAD_PORT}"
 export CLI_HOST="0.0.0.0"
 
 # Set credentials 
