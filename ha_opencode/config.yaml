@@ -1,5 +1,5 @@
 ---
-name: "OpenCode"
+name: "OpenCode Extras"
 description: "AI coding agent for editing Home Assistant configuration with deep MCP integration and LSP support"
 version: "1.6.2"
 slug: "ha_opencode"
