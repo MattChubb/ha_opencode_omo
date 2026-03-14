@@ -12,7 +12,7 @@ if [ "${CODENOMAD_ENABLED}" != "true" ]; then
 fi
 
 # Read configuration
-CODENOMAD_PORT=$(bashio::config 'codenomad_port' 2>/dev/null || echo "3000")
+CODENOMAD_PORT="9898"
 CODENOMAD_WORKSPACE=$(bashio::config 'codenomad_workspace' 2>/dev/null || echo "/homeassistant")
 CODENOMAD_USERNAME=$(bashio::config 'codenomad_username' 2>/dev/null || echo "")
 CODENOMAD_PASSWORD=$(bashio::config 'codenomad_password' 2>/dev/null || echo "")

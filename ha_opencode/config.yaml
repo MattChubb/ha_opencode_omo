@@ -64,7 +64,6 @@ options:
 
   # CodeNomad - browser-based file editor
   codenomad_enabled: false
-  codenomad_port: 3000
   codenomad_workspace: "/homeassistant"
   codenomad_username: "codenomad"
   codenomad_password: "codenomad"
@@ -99,7 +98,6 @@ schema:
 
   # CodeNomad
   codenomad_enabled: bool
-  codenomad_port: port
   codenomad_workspace: str
   codenomad_username: str?
   codenomad_password: password?
@@ -110,9 +108,3 @@ backup_exclude:
   - ".cache/*"
   - ".local/share/opencode/cache/*"
   - ".env_vars"
-
-# Port mapping for CodeNomad direct access
-ports:
-  3000/tcp: 3000
-ports_description:
-  3000/tcp: "CodeNomad web interface (direct access)"
