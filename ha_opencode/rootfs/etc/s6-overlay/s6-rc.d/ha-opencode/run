@@ -21,7 +21,7 @@ fi
 
 UI_MODE=$(bashio::config 'ui_mode' 2>/dev/null || echo "tui")
 # Normalize empty or invalid values to tui (safe default)
-if [ -z "${UI_MODE}" ] || { [ "${UI_MODE}" != "tui" ] && [ "${UI_MODE}" != "web" ]; }; then
+if [ -z "${UI_MODE}" ] || { [ "${UI_MODE}" != "tui" ] && [ "${UI_MODE}" != "web" ] && [ "${UI_MODE}" != "codenomad" ]; }; then
     if [ -n "${UI_MODE}" ]; then
         bashio::log.warning "Unknown ui_mode '${UI_MODE}', defaulting to 'tui'"
     fi
@@ -31,6 +31,8 @@ fi
 bashio::log.info "=============================================="
 if [ "${UI_MODE}" = "web" ]; then
     bashio::log.info "  OpenCode Web UI (opencode web + ingress)"
+elif [ "${UI_MODE}" = "codenomad" ]; then
+    bashio::log.info "  CodeNomad UI (codenomad + ingress)"
 else
     bashio::log.info "  OpenCode Terminal (ttyd + ingress)"
 fi
@@ -86,6 +88,35 @@ if [ "${UI_MODE}" = "web" ]; then
 
     bashio::log.error "Process exited unexpectedly (code ${EXIT_CODE}), shutting down..."
     exit "${EXIT_CODE}"
+fi
+
+# ==============================================================================
+# CodeNomad mode — launch codenomad directly on port 8099 (ingress)
+# ==============================================================================
+
+if [ "${UI_MODE}" = "codenomad" ]; then
+    bashio::log.info "Starting CodeNomad on port 8099 (Home Assistant ingress)..."
+
+    # Read CodeNomad configuration
+    CODENOMAD_WORKSPACE=$(bashio::config 'codenomad_workspace' 2>/dev/null || echo "/homeassistant")
+    CODENOMAD_USERNAME=$(bashio::config 'codenomad_username' 2>/dev/null || echo "")
+    CODENOMAD_PASSWORD=$(bashio::config 'codenomad_password' 2>/dev/null || echo "")
+
+    bashio::log.info "Workspace: ${CODENOMAD_WORKSPACE}"
+
+    # Set network config for ingress port
+    export CLI_HTTP_PORT="8099"
+    export CLI_HOST="0.0.0.0"
+
+    # Export credentials
+    export CODENOMAD_SERVER_USERNAME="${CODENOMAD_USERNAME}"
+    export CODENOMAD_SERVER_PASSWORD="${CODENOMAD_PASSWORD}"
+
+    # Change to workspace directory
+    cd "${CODENOMAD_WORKSPACE}"
+
+    # Start CodeNomad
+    exec codenomad
 fi
 
 # ==============================================================================
