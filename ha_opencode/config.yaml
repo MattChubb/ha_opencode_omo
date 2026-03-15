@@ -18,11 +18,6 @@ ingress_stream: true
 panel_icon: mdi:robot
 panel_title: OpenCode
 
-ports:
-  9898/tcp: 9898
-ports_description:
-  9898/tcp: CodeNomad web interface (optional, for direct local access)
-
 # File access - Home Assistant config directory
 map:
   - type: homeassistant_config
