@@ -18,11 +18,6 @@ ingress_stream: true
 panel_icon: mdi:robot
 panel_title: OpenCode
 
-ports:
-  9898/tcp: 9898
-ports_description:
-  9898/tcp: CodeNomad web interface (optional, for direct local access)
-
 # File access - Home Assistant config directory
 map:
   - type: homeassistant_config
@@ -44,7 +39,7 @@ options:
   mcp_enabled: true
   lsp_enabled: true
 
-  # UI mode: tui (terminal via ttyd + tmux), web (browser UI via opencode web)
+  # UI mode: tui (terminal via ttyd + tmux), web (browser UI via opencode web), codenomad (file editor)
   ui_mode: "tui"
 
   # CPU mode: auto (detect), baseline (for older CPUs), regular (force AVX2)
@@ -68,7 +63,6 @@ options:
   opencode_config: ""
 
   # CodeNomad - browser-based file editor
-  codenomad_enabled: false
   codenomad_workspace: "/homeassistant"
   codenomad_username: "codenomad"
   codenomad_password: "codenomad"
@@ -79,7 +73,7 @@ schema:
   lsp_enabled: bool
 
   # UI mode
-  ui_mode: list(tui|web)
+  ui_mode: list(tui|web|codenomad)
 
   # CPU mode
   cpu_mode: list(auto|baseline|regular)
@@ -102,7 +96,6 @@ schema:
   opencode_config: str?
 
   # CodeNomad
-  codenomad_enabled: bool
   codenomad_workspace: str
   codenomad_username: str?
   codenomad_password: password?

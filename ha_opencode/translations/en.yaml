@@ -10,7 +10,7 @@ configuration:
 
   ui_mode:
     name: "UI Mode"
-    description: "Controls how OpenCode is displayed. 'tui' uses a full terminal (ttyd + tmux) with shell access — you can run shell commands, use tab completion, and interact with OpenCode's TUI. 'web' uses OpenCode's built-in browser UI — a cleaner interface but without shell access (no terminal commands, only the OpenCode chat). Default: tui."
+    description: "Controls how OpenCode is displayed. 'tui' uses a full terminal (ttyd + tmux) with shell access — you can run shell commands, use tab completion, and interact with OpenCode's TUI. 'web' uses OpenCode's built-in browser UI — a cleaner interface but without shell access (no terminal commands, only the OpenCode chat). 'codenomad' uses CodeNomad — a web-based file editor for browsing and editing files. Default: tui."
 
   cpu_mode:
     name: "CPU Mode"
@@ -43,10 +43,6 @@ configuration:
   opencode_config:
     name: "Custom OpenCode Configuration (JSON)"
     description: "Advanced: Paste a JSON object to customize OpenCode's own configuration (providers, keybindings, etc.). This is merged with the add-on's built-in config. Leave empty for defaults. See https://opencode.ai/docs/config for the full schema."
-
-  codenomad_enabled:
-    name: "CodeNomad Enabled"
-    description: "Enable CodeNomad web-based file editor for OpenCode server mode"
 
   codenomad_workspace:
     name: "CodeNomad Workspace"
