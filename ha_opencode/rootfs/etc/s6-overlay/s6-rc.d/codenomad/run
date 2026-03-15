@@ -3,10 +3,10 @@
 # CodeNomad - Web frontend for OpenCode server mode
 # ==============================================================================
 
-# Check if CodeNomad is enabled
-CODENOMAD_ENABLED=$(bashio::config 'codenomad_enabled' 2>/dev/null || echo "false")
-if [ "${CODENOMAD_ENABLED}" != "true" ]; then
-    bashio::log.info "CodeNomad is disabled, exiting..."
+# Check if ui_mode is set to codenomad
+UI_MODE=$(bashio::config 'ui_mode' 2>/dev/null || echo "tui")
+if [ "${UI_MODE}" != "codenomad" ]; then
+    bashio::log.info "CodeNomad direct access not enabled (ui_mode='${UI_MODE}'), exiting..."
     sleep 10
     exit 0
 fi
