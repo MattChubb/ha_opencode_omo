@@ -117,15 +117,18 @@ if [ "${UI_MODE}" = "codenomad" ]; then
     # Change to workspace directory
     cd "${CODENOMAD_WORKSPACE}"
 
+    # Ensure all child processes are killed when this script exits
+    trap 'kill 0' EXIT TERM INT
+
     # Start CodeNomad
-    exec codenomad
+    codenomad &
     OPENCODE_PID=$!
 
     # Give the server a moment to bind
     sleep 2
 
     if ! kill -0 "${OPENCODE_PID}" 2>/dev/null; then
-        bashio::log.error "opencode web failed to start"
+        bashio::log.error "codenomad failed to start"
         exit 1
     fi
 
@@ -135,7 +138,7 @@ if [ "${UI_MODE}" = "codenomad" ]; then
     # If one dies, the EXIT trap kills the other via 'kill 0'.
     # (We can't use 'exec nginx' because that replaces the shell and
     # loses the ability to clean up the backgrounded opencode process.)
-    nginx -c /etc/nginx/codenomad.conf &
+    nginx -c /etc/nginx/opencode-web.conf &
     NGINX_PID=$!
 
     # wait -n: return as soon as ANY child exits (bash 4.3+)
