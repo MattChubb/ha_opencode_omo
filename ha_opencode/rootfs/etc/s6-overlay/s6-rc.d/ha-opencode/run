@@ -119,6 +119,31 @@ if [ "${UI_MODE}" = "codenomad" ]; then
 
     # Start CodeNomad
     exec codenomad
+    OPENCODE_PID=$!
+
+    # Give the server a moment to bind
+    sleep 2
+
+    if ! kill -0 "${OPENCODE_PID}" 2>/dev/null; then
+        bashio::log.error "opencode web failed to start"
+        exit 1
+    fi
+
+    bashio::log.info "codenomad running (pid ${OPENCODE_PID}), starting nginx proxy on 8099..."
+
+    # Run nginx in the background and wait for either process to exit.
+    # If one dies, the EXIT trap kills the other via 'kill 0'.
+    # (We can't use 'exec nginx' because that replaces the shell and
+    # loses the ability to clean up the backgrounded opencode process.)
+    nginx -c /etc/nginx/codenomad.conf &
+    NGINX_PID=$!
+
+    # wait -n: return as soon as ANY child exits (bash 4.3+)
+    wait -n "${OPENCODE_PID}" "${NGINX_PID}" 2>/dev/null
+    EXIT_CODE=$?
+
+    bashio::log.error "Process exited unexpectedly (code ${EXIT_CODE}), shutting down..."
+    exit "${EXIT_CODE}"
 fi
 
 # ==============================================================================
