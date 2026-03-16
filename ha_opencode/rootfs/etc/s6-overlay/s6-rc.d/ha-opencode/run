@@ -105,8 +105,9 @@ if [ "${UI_MODE}" = "codenomad" ]; then
     bashio::log.info "Workspace: ${CODENOMAD_WORKSPACE}"
 
     # Set network config for ingress port
-    export CLI_HTTP_PORT="8099"
+    export CLI_HTTPS="false"
     export CLI_HTTP="true"
+    export CLI_HTTP_PORT="8099"
     export CLI_HOST="0.0.0.0"
 
     # Export credentials
