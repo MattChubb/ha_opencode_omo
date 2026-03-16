@@ -106,6 +106,7 @@ if [ "${UI_MODE}" = "codenomad" ]; then
 
     # Set network config for ingress port
     export CLI_HTTP_PORT="8099"
+    export CLI_HTTP="true"
     export CLI_HOST="0.0.0.0"
 
     # Export credentials
@@ -156,7 +157,7 @@ get_theme() {
             ;;
         "dracula")
             # Dracula theme
-            echo '{"background":"#282a36","foreground":"#f8f8f2","cursor":"#f8f8f2","cursorAccent":"#282a36","selectionBackground":"#44475a","selectionForeground":"#f8f8f2","black":"#21222c","red":"#ff5555","green":"#50fa7b","yellow":"#f1fa8c","blue":"#bd93f9","magenta":"#ff79c6","cyan":"#8be9fd","white":"#f8f8f2","brightBlack":"#6272a4","brightRed":"#ff6e6e","brightGreen":"#69ff94","brightYellow":"#ffffa5","brightBlue":"#d6acff","brightMagenta":"#ff92df","brightCyan":"#a4ffff","brightWhite":"#ffffff"}'
+            echo '{"background":"#282a36","foreground":"#f8f8f2","cursor":"#f8f8f2","cursorAccent":"#282a36","selectionBackground":"#44475a","selectionForeground":"#f8f8f2","black":"#21222c","red":"#ff5555","green":"#50fa7b","yellow":"#f1fa8c","blue":"#bd93f9","magenta":"#ff79c6","cyan":"#8be9fd","white":"#f8f8f2","brightBlack":"#6272a4","brightRed":"#ff6e6e","brightGreen":"#69ff94","brightYellow":"#ffffa5","brightBlue"=:"#d6acff","brightMagenta":"#ff92df","brightCyan":"#a4ffff","brightWhite":"#ffffff"}'
             ;;
         "nord")
             # Nord theme
