@@ -108,7 +108,7 @@ if [ "${UI_MODE}" = "codenomad" ]; then
     export CLI_HTTPS="false"
     export CLI_HTTP="true"
     export CLI_HTTP_PORT="9898"
-    export CLI_HOST="127.0.0.1"
+    export CLI_HOST="0.0.0.0"
 
     # Export credentials
     export CODENOMAD_SERVER_USERNAME="${CODENOMAD_USERNAME}"
@@ -137,7 +137,8 @@ if [ "${UI_MODE}" = "codenomad" ]; then
     # Run nginx in the background and wait for either process to exit.
     # If one dies, the EXIT trap kills the other via 'kill 0'.
     # (We can't use 'exec nginx' because that replaces the shell and
-    # loses the ability to clean up the backgrounded opencode process.)
+    # loses the ability to clean up the backgrounded codenomad process.)
+    #TODO Give codenomad its own separate nginx config rather than hook into oc webs
     nginx -c /etc/nginx/opencode-web.conf &
     NGINX_PID=$!
 
